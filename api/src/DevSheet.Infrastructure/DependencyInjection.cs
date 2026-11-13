@@ -14,6 +14,8 @@ public static class DependencyInjection
     {
         services.AddDbContext<AppDbContext>(o => o.UseNpgsql(config.GetConnectionString("Default")));
         services.AddScoped<ITokenProtector, TokenProtector>();
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<IGitHubRepoSource, OctokitRepoSource>();
         services.AddScoped<IGitHubSyncService, GitHubSyncService>();
         return services;
     }

@@ -12,3 +12,4 @@ out/
 # OS / editor
 .DS_Store
 .idea/
+*.tsbuildinfo

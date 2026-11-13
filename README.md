@@ -44,6 +44,15 @@ Prerequisites: .NET 8 SDK, Node 20+, PostgreSQL (Docker or local).
 
 Dev note: tables are created with `EnsureCreated()` for the demo; switch to EF migrations before deploying.
 
+## Tests and CI
+
+```bash
+cd api && dotnet test                                   # xUnit (SQLite in-memory, no Postgres needed)
+cd web && npm run lint && npm run typecheck && npm test && npm run build
+```
+GitHub Actions (`.github/workflows/ci.yml`) runs both on every push and pull request.
+The backlog lives in `docs/BACKLOG.md` (ready to paste into GitHub Issues).
+
 ## Status
 - [x] Skeleton: layered API, Next.js app, schema, GitHub login + repo sync, approve/hide, public page
 - [ ] Skills detect / suggest / confirm
