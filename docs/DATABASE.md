@@ -1,0 +1,122 @@
+# Database
+
+PostgreSQL, accessed through EF Core (`api/src/DevSheet.Infrastructure/Persistence/AppDbContext.cs`).
+The full DDL is in [`schema.sql`](schema.sql). It is **generated from the EF model** and a test
+(`SchemaScriptTests`) fails if the model changes without the file being regenerated:
+
+```bash
+cd api && UPDATE_SCHEMA=1 dotnet test --filter SchemaScriptTests
+```
+
+Connect locally with `docker compose exec db psql -U devsheet -d devsheet`
+(host `localhost`, port `5432`, database/user/password `devsheet`). Table names are quoted and
+capitalized, e.g. `SELECT * FROM "Users";`.
+
+## Entity-relationship diagram
+
+```mermaid
+erDiagram
+    Users ||--o| Profiles : has
+    Users ||--o{ GithubRepos : "synced from GitHub"
+    Users ||--o{ Projects : owns
+    Users ||--o{ WorkExperiences : has
+    Users ||--o{ Educations : has
+    GithubRepos |o--o{ Projects : "backs"
+    Projects ||--o{ ProjectSkills : uses
+    Skills ||--o{ ProjectSkills : "linked by"
+    Skills ||--o{ SkillAliases : "known as"
+
+    Users {
+        uuid Id PK
+        bigint GithubId UK "stable identity key"
+        text GithubLogin
+        text Slug UK "public URL"
+        boolean IsPublished "opt-in"
+        text EncryptedGithubToken "Data Protection, never sent to browser"
+        timestamptz LastSyncedAt
+    }
+    Profiles {
+        uuid Id PK
+        uuid UserId FK,UK
+        text FullName
+        text Headline
+        text Summary
+        text Location
+        text Email
+    }
+    GithubRepos {
+        uuid Id PK
+        uuid UserId FK
+        bigint GithubRepoId "unique per user"
+        text Name
+        text Description
+        text HtmlUrl
+        int Stars
+        boolean IsFork
+        timestamptz PushedAt
+        text LanguagesJson "language -> bytes"
+        text ETag
+        boolean SourceMissing
+    }
+    Projects {
+        uuid Id PK
+        uuid UserId FK
+        uuid GithubRepoId FK "nullable"
+        text TitleOverride
+        text DescriptionOverride
+        int Status "0 Pending, 1 Visible, 2 Hidden"
+        int DisplayOrder
+    }
+    Skills {
+        uuid Id PK
+        text Name UK
+        text EscoUri "nullable, future ESCO mapping"
+    }
+    SkillAliases {
+        uuid Id PK
+        uuid SkillId FK
+        text Alias UK "normalized lower-case"
+    }
+    ProjectSkills {
+        uuid ProjectId PK,FK
+        uuid SkillId PK,FK
+        int Status "0 Suggested, 1 Confirmed, 2 Rejected"
+    }
+    WorkExperiences {
+        uuid Id PK
+        uuid UserId FK
+        text Company
+        text Title
+        date StartDate
+        date EndDate "null = present"
+        text Description
+    }
+    Educations {
+        uuid Id PK
+        uuid UserId FK
+        text Institution
+        text Degree
+        date StartDate
+        date EndDate
+    }
+```
+
+## Design notes
+
+- **Two data layers.** `GithubRepos` is a read-only copy of GitHub data; only the sync job writes it.
+  `Projects` is the user-owned layer (title/description overrides, status, order). Re-sync never
+  touches `Projects`, so user edits survive.
+- **Approve-first.** New repos create a `Projects` row with `Status = 0 (Pending)`. Only `Status = 1 (Visible)`
+  projects appear on the public page or in a CV.
+- **Skill links keep their state.** `ProjectSkills` rows are never deleted by sync. `Rejected` rows are
+  kept so a dismissed suggestion is not proposed again; `Confirmed` rows survive even if the language
+  later disappears from the repo.
+- **Skills are canonical.** `Skills` is a seeded list; `SkillAliases` maps alternative spellings and
+  GitHub language names (e.g. `dockerfile`, `plpgsql`) to a skill. Skills are never created from raw GitHub strings.
+- **Identity.** Users are keyed by GitHub's numeric id (`GithubId`), not the login, which can change.
+  `Slug` is a separate, unique, public value.
+- **Deletes.** Deleting a user cascades to everything they own. `Projects.GithubRepoId` has no cascade:
+  a repo row cannot be deleted while a project references it (repos that vanish from GitHub are flagged
+  `SourceMissing`, not deleted).
+- **Migrations.** Until issue #13 the tables are created with `EnsureCreated()`. After a model change
+  during development, reset the database: `docker compose down -v && docker compose up -d`.

@@ -19,3 +19,12 @@ public class ProjectSkill
     public Skill? Skill { get; set; }
     public LinkStatus Status { get; set; } = LinkStatus.Suggested;
 }
+
+/// <summary>Alternative spelling of a canonical skill. Alias is stored normalized (trimmed, lower-case).</summary>
+public class SkillAlias
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid SkillId { get; set; }
+    public Skill? Skill { get; set; }
+    public string Alias { get; set; } = "";
+}

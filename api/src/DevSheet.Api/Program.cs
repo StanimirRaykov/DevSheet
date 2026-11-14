@@ -70,7 +70,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     // Demo shortcut: create tables directly. Switch to EF migrations before real deployment.
     using var scope = app.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreated();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+    await SkillSeeder.SeedAsync(db);
 }
 
 app.UseCors();

@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<ProjectSkill> ProjectSkills => Set<ProjectSkill>();
+    public DbSet<SkillAlias> SkillAliases => Set<SkillAlias>();
     public DbSet<WorkExperience> WorkExperiences => Set<WorkExperience>();
     public DbSet<Education> Educations => Set<Education>();
 
@@ -30,5 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<ProjectSkill>().HasKey(ps => new { ps.ProjectId, ps.SkillId });
         b.Entity<Project>().HasMany(p => p.Skills).WithOne(ps => ps.Project).HasForeignKey(ps => ps.ProjectId);
         b.Entity<Skill>().HasIndex(s => s.Name).IsUnique();
+        b.Entity<SkillAlias>().HasIndex(a => a.Alias).IsUnique();
+        b.Entity<SkillAlias>().HasOne(a => a.Skill).WithMany().HasForeignKey(a => a.SkillId);
     }
 }
