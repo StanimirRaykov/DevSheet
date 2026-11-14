@@ -51,7 +51,7 @@ cd api && dotnet test                                   # xUnit (SQLite in-memor
 cd web && npm run lint && npm run typecheck && npm test && npm run build
 ```
 GitHub Actions (`.github/workflows/ci.yml`) runs both on every push and pull request.
-The backlog lives in `docs/BACKLOG.md` (ready to paste into GitHub Issues).
+The backlog lives in `docs/BACKLOG.md` and `docs/issues/` (detailed issues, created with `scripts/create-issues.sh`); workflow in `CONTRIBUTING.md`.
 
 ## Status
 - [x] Skeleton: layered API, Next.js app, schema, GitHub login + repo sync, approve/hide, public page
