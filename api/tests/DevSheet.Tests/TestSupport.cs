@@ -31,6 +31,11 @@ public sealed class TestDb : IDisposable
         return u;
     }
 
+    /// <summary>Seeds the canonical skills and aliases (same seeder the app runs at startup).</summary>
+    public void SeedSkills() => DevSheet.Infrastructure.Persistence.SkillSeeder.SeedAsync(Db).GetAwaiter().GetResult();
+
+    public Guid SkillId(string name) => Db.Skills.Single(s => s.Name == name).Id;
+
     public void Dispose() { Db.Dispose(); _conn.Dispose(); }
 }
 
@@ -51,9 +56,10 @@ public class FakeSource : IGitHubRepoSource
         return Task.FromResult<IReadOnlyList<RemoteRepo>>(Repos.ToList());
     }
 
-    public static RemoteRepo Repo(long id, string name = "repo", int stars = 0) =>
-        new(id, name, "desc", $"https://github.com/alice/{name}", stars, false, DateTime.UtcNow,
-            new Dictionary<string, long> { ["C#"] = 1000 });
+    public static RemoteRepo Repo(long id, string name = "repo", int stars = 0,
+        Dictionary<string, long>? languages = null, bool isFork = false) =>
+        new(id, name, "desc", $"https://github.com/alice/{name}", stars, isFork, DateTime.UtcNow,
+            languages ?? new Dictionary<string, long> { ["C#"] = 1000 });
 }
 
 public class PassthroughProtector : ITokenProtector

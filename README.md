@@ -44,6 +44,10 @@ Prerequisites: .NET 8 SDK, Node 20+, PostgreSQL (Docker or local).
 
 Dev note: tables are created with `EnsureCreated()` for the demo; switch to EF migrations before deploying.
 
+## Database
+
+ER diagram and design notes: [`docs/DATABASE.md`](docs/DATABASE.md). Full DDL: [`docs/schema.sql`](docs/schema.sql) (generated from the EF model and checked by a test).
+
 ## Tests and CI
 
 ```bash
