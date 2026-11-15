@@ -34,6 +34,22 @@ public sealed class TestDb : IDisposable
     /// <summary>Seeds the canonical skills and aliases (same seeder the app runs at startup).</summary>
     public void SeedSkills() => DevSheet.Infrastructure.Persistence.SkillSeeder.SeedAsync(Db).GetAwaiter().GetResult();
 
+    public Project AddProjectFor(User u, string name, ProjectStatus status = ProjectStatus.Visible)
+    {
+        var repo = new GithubRepo { UserId = u.Id, GithubRepoId = Random.Shared.NextInt64(), Name = name, HtmlUrl = "https://x/" + name };
+        var project = new Project { UserId = u.Id, GithubRepoId = repo.Id, Status = status };
+        Db.GithubRepos.Add(repo);
+        Db.Projects.Add(project);
+        Db.SaveChanges();
+        return project;
+    }
+
+    public void Link(Project p, string skillName, LinkStatus status)
+    {
+        Db.ProjectSkills.Add(new ProjectSkill { ProjectId = p.Id, SkillId = SkillId(skillName), Status = status });
+        Db.SaveChanges();
+    }
+
     public Guid SkillId(string name) => Db.Skills.Single(s => s.Name == name).Id;
 
     public void Dispose() { Db.Dispose(); _conn.Dispose(); }

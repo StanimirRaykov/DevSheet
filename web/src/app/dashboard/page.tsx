@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { DashboardProject, ProjectStatus, PUBLIC_API, topLanguages } from "@/lib/api";
+import { SkillRow } from "./skill-row";
 
 interface Me { githubLogin: string; slug: string; isPublished: boolean; lastSyncedAt: string | null }
 
@@ -34,6 +35,18 @@ export default function Dashboard() {
   async function setStatus(id: string, status: ProjectStatus) {
     await call(`/api/me/projects/${id}/status`, {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }),
+    });
+    await load();
+  }
+  async function setSkillStatus(projectId: string, skillId: string, status: 1 | 2) {
+    await call(`/api/me/projects/${projectId}/skills/${skillId}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }),
+    });
+    await load();
+  }
+  async function addSkill(projectId: string, name: string) {
+    await call(`/api/me/projects/${projectId}/skills`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }),
     });
     await load();
   }
@@ -80,6 +93,11 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+            <SkillRow
+              skills={p.skills}
+              onSetStatus={(skillId, status) => setSkillStatus(p.id, skillId, status)}
+              onAdd={(name) => addSkill(p.id, name)}
+            />
           </li>
         ))}
         {projects.length === 0 && <li className="text-neutral-500">No projects yet — click “Sync now”.</li>}
