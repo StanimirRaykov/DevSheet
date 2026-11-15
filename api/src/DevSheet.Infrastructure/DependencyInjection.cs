@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<IGitHubRepoSource, OctokitRepoSource>();
         services.AddScoped<IGitHubSyncService, GitHubSyncService>();
+        services.AddScoped<DevSheet.Infrastructure.Skills.ProjectSkillService>();
         return services;
     }
 }

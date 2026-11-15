@@ -1,3 +1,4 @@
+using DevSheet.Application.Skills;
 using DevSheet.Domain.Entities;
 using DevSheet.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
@@ -23,9 +24,14 @@ public class PublicController(AppDbContext db) : ControllerBase
             {
                 Title = p.TitleOverride ?? p.GithubRepo!.Name,
                 Description = p.DescriptionOverride ?? p.GithubRepo!.Description,
-                Url = p.GithubRepo!.HtmlUrl, p.GithubRepo.Stars, p.GithubRepo.LanguagesJson
+                Url = p.GithubRepo!.HtmlUrl, p.GithubRepo.Stars, p.GithubRepo.LanguagesJson,
+                // Only Confirmed links are ever public. Suggested and Rejected stay private to the owner.
+                Skills = p.Skills.Where(ps => ps.Status == LinkStatus.Confirmed)
+                    .OrderBy(ps => ps.Skill!.Name).Select(ps => ps.Skill!.Name)
             }).ToListAsync();
 
-        return Ok(new { u.GithubLogin, u.Slug, Projects = projects });
+        var matrix = SkillMatrix.Build(projects.Select(p => (p.Title, (IEnumerable<string>)p.Skills)));
+
+        return Ok(new { u.GithubLogin, u.Slug, Projects = projects, Skills = matrix });
     }
 }
