@@ -46,4 +46,28 @@ public class CareerController(CareerService career) : ControllerBase
 
     [HttpDelete("education/{id:guid}")]
     public async Task<IActionResult> DeleteEducation(Guid id) => await career.DeleteEducationAsync(Uid, id) ? NoContent() : NotFound();
+
+    [HttpGet("languages")]
+    public async Task<IActionResult> ListLanguages() => Ok(await career.ListLanguagesAsync(Uid));
+
+    [HttpPost("languages")]
+    public async Task<IActionResult> CreateLanguage(LanguageInput input) => Map(await career.CreateLanguageAsync(Uid, input));
+
+    [HttpPut("languages/{id:guid}")]
+    public async Task<IActionResult> UpdateLanguage(Guid id, LanguageInput input) => Map(await career.UpdateLanguageAsync(Uid, id, input));
+
+    [HttpDelete("languages/{id:guid}")]
+    public async Task<IActionResult> DeleteLanguage(Guid id) => await career.DeleteLanguageAsync(Uid, id) ? NoContent() : NotFound();
+
+    [HttpGet("certifications")]
+    public async Task<IActionResult> ListCertifications() => Ok(await career.ListCertificationsAsync(Uid));
+
+    [HttpPost("certifications")]
+    public async Task<IActionResult> CreateCertification(CertificationInput input) => Map(await career.CreateCertificationAsync(Uid, input));
+
+    [HttpPut("certifications/{id:guid}")]
+    public async Task<IActionResult> UpdateCertification(Guid id, CertificationInput input) => Map(await career.UpdateCertificationAsync(Uid, id, input));
+
+    [HttpDelete("certifications/{id:guid}")]
+    public async Task<IActionResult> DeleteCertification(Guid id) => await career.DeleteCertificationAsync(Uid, id) ? NoContent() : NotFound();
 }
