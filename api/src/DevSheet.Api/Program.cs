@@ -23,7 +23,9 @@ builder.Services
     .AddAuthentication(o =>
     {
         o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        o.DefaultChallengeScheme = GitHubAuthenticationDefaults.AuthenticationScheme;
+        // API calls without a valid cookie must get 401 (see the cookie's OnRedirectToLogin below), not a redirect to GitHub.
+        // The login endpoint challenges GitHub explicitly (AuthController.Login).
+        o.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddCookie(o =>
     {
@@ -80,3 +82,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+// Needed so integration tests can start the app with WebApplicationFactory<Program>.
+public partial class Program { }
