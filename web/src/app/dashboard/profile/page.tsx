@@ -2,27 +2,34 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { EducationItem, ExperienceItem, ProfileData, PUBLIC_API } from "@/lib/api";
+import { CertificationItem, EducationItem, ExperienceItem, LanguageItem, ProfileData, PUBLIC_API } from "@/lib/api";
 import { send } from "@/lib/client";
 import { EducationSection, ExperienceSection, ProfileForm } from "./forms";
+import { CertificationsSection, LanguagesSection } from "./languages-certs";
 
 export default function ProfilePage() {
   const [state, setState] = useState<"loading" | "anon" | "ready">("loading");
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [experience, setExperience] = useState<ExperienceItem[]>([]);
   const [education, setEducation] = useState<EducationItem[]>([]);
+  const [languages, setLanguages] = useState<LanguageItem[]>([]);
+  const [certifications, setCertifications] = useState<CertificationItem[]>([]);
 
   const load = useCallback(async () => {
-    const [p, x, e] = await Promise.all([
+    const [p, x, e, l, c] = await Promise.all([
       send<ProfileData>("/api/me/profile"),
       send<ExperienceItem[]>("/api/me/experience"),
       send<EducationItem[]>("/api/me/education"),
+      send<LanguageItem[]>("/api/me/languages"),
+      send<CertificationItem[]>("/api/me/certifications"),
     ]);
-    if (p.status === 401 || x.status === 401 || e.status === 401) return setState("anon");
-    if (!p.data || !x.data || !e.data) return setState("anon");
+    if ([p, x, e, l, c].some((r) => r.status === 401)) return setState("anon");
+    if (!p.data || !x.data || !e.data || !l.data || !c.data) return setState("anon");
     setProfile(p.data);
     setExperience(x.data);
     setEducation(e.data);
+    setLanguages(l.data);
+    setCertifications(c.data);
     setState("ready");
   }, []);
 
@@ -36,12 +43,14 @@ export default function ProfilePage() {
   return (
     <main className="mx-auto max-w-3xl space-y-10 p-8">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Profile, experience and education</h1>
+        <h1 className="text-2xl font-bold">Profile and CV data</h1>
         <Link href="/dashboard" className="text-sm underline">← Back to projects</Link>
       </header>
       <section className="space-y-3"><h2 className="text-xl font-semibold">Profile</h2><ProfileForm initial={profile} /></section>
       <section className="space-y-3"><h2 className="text-xl font-semibold">Work experience</h2><ExperienceSection items={experience} onChange={load} /></section>
       <section className="space-y-3"><h2 className="text-xl font-semibold">Education</h2><EducationSection items={education} onChange={load} /></section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Languages</h2><LanguagesSection items={languages} onChange={load} /></section>
+      <section className="space-y-3"><h2 className="text-xl font-semibold">Certifications</h2><CertificationsSection items={certifications} onChange={load} /></section>
     </main>
   );
 }
