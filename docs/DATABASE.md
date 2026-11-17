@@ -43,6 +43,8 @@ erDiagram
         text Summary
         text Location
         text Email
+        boolean ShowEmailPublicly "opt-in, default false"
+        boolean ShowLocationPublicly "opt-in, default false"
     }
     GithubRepos {
         uuid Id PK
@@ -113,6 +115,8 @@ erDiagram
   later disappears from the repo.
 - **Skills are canonical.** `Skills` is a seeded list; `SkillAliases` maps alternative spellings and
   GitHub language names (e.g. `dockerfile`, `plpgsql`) to a skill. Skills are never created from raw GitHub strings.
+- **Privacy flags.** `Profiles.ShowEmailPublicly` and `ShowLocationPublicly` default to false; the public page
+  omits email and location unless the owner opts in. Name, headline and summary are public once the page is published.
 - **Identity.** Users are keyed by GitHub's numeric id (`GithubId`), not the login, which can change.
   `Slug` is a separate, unique, public value.
 - **Deletes.** Deleting a user cascades to everything they own. `Projects.GithubRepoId` has no cascade:

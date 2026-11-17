@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { PublicPortfolio, SERVER_API, topLanguages } from "@/lib/api";
+import { formatRange } from "@/lib/dates";
 import { projectsLabel } from "@/lib/skills";
 
 // Public pages read only stored data from our API and never call GitHub.
@@ -12,7 +13,14 @@ async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
 
   return (
     <>
-      <h1 className="text-3xl font-bold">{data.githubLogin}</h1>
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold">{data.profile?.fullName || data.githubLogin}</h1>
+        {data.profile?.headline && <p className="text-lg text-neutral-700">{data.profile.headline}</p>}
+        <p className="text-sm text-neutral-500">
+          {[data.profile?.location, data.profile?.email].filter(Boolean).join(" · ")}
+        </p>
+        {data.profile?.summary && <p className="whitespace-pre-line pt-2 text-neutral-800">{data.profile.summary}</p>}
+      </header>
       {data.skills.length > 0 && (
         <section aria-labelledby="skills-heading" className="space-y-2">
           <h2 id="skills-heading" className="text-xl font-semibold">Skills</h2>
@@ -20,6 +28,33 @@ async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
             {data.skills.map((s) => (
               <li key={s.name} title={s.projects.join(", ")} className="rounded-full bg-neutral-100 px-3 py-1 text-sm">
                 {s.name} <span className="text-neutral-500">· {projectsLabel(s.projects.length)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {data.experience.length > 0 && (
+        <section aria-labelledby="exp-heading" className="space-y-3">
+          <h2 id="exp-heading" className="text-xl font-semibold">Experience</h2>
+          <ul className="space-y-3">
+            {data.experience.map((x) => (
+              <li key={`${x.company}-${x.startDate}`}>
+                <p className="font-semibold">{x.title} · {x.company}</p>
+                <p className="text-xs text-neutral-500">{formatRange(x.startDate, x.endDate)}</p>
+                {x.description && <p className="whitespace-pre-line text-sm text-neutral-700">{x.description}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {data.education.length > 0 && (
+        <section aria-labelledby="edu-heading" className="space-y-3">
+          <h2 id="edu-heading" className="text-xl font-semibold">Education</h2>
+          <ul className="space-y-2">
+            {data.education.map((x) => (
+              <li key={`${x.institution}-${x.startDate}`}>
+                <p className="font-semibold">{x.institution}{x.degree && ` · ${x.degree}`}</p>
+                <p className="text-xs text-neutral-500">{formatRange(x.startDate, x.endDate)}</p>
               </li>
             ))}
           </ul>
