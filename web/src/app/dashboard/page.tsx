@@ -67,6 +67,8 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">Hi, {me!.githubLogin}</h1>
         <div className="flex gap-2">
           <Link href="/dashboard/profile" className="rounded border px-4 py-2">Profile &amp; CV data</Link>
+          {/* Plain link: the browser sends the login cookie and downloads the PDF the API returns. */}
+          <a href={`${PUBLIC_API}/api/me/cv.pdf?template=modern`} className="rounded border px-4 py-2">Download CV</a>
           <button onClick={sync} disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
             {busy ? "Syncing…" : "Sync now"}
           </button>
