@@ -31,6 +31,18 @@ CREATE TABLE "SkillAliases" (
 );
 
 
+CREATE TABLE "Certifications" (
+    "Id" uuid NOT NULL,
+    "UserId" uuid NOT NULL,
+    "Name" text NOT NULL,
+    "Issuer" text NOT NULL,
+    "IssueDate" date,
+    "Url" text,
+    CONSTRAINT "PK_Certifications" PRIMARY KEY ("Id"),
+    CONSTRAINT "FK_Certifications_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+);
+
+
 CREATE TABLE "Educations" (
     "Id" uuid NOT NULL,
     "UserId" uuid NOT NULL,
@@ -58,6 +70,22 @@ CREATE TABLE "GithubRepos" (
     "SourceMissing" boolean NOT NULL,
     CONSTRAINT "PK_GithubRepos" PRIMARY KEY ("Id"),
     CONSTRAINT "FK_GithubRepos_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+);
+
+
+CREATE TABLE "Languages" (
+    "Id" uuid NOT NULL,
+    "UserId" uuid NOT NULL,
+    "Name" text NOT NULL,
+    "IsoCode" text,
+    "IsMotherTongue" boolean NOT NULL,
+    "Listening" integer,
+    "Reading" integer,
+    "SpokenInteraction" integer,
+    "SpokenProduction" integer,
+    "Writing" integer,
+    CONSTRAINT "PK_Languages" PRIMARY KEY ("Id"),
+    CONSTRAINT "FK_Languages_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
 );
 
 
@@ -113,10 +141,16 @@ CREATE TABLE "ProjectSkills" (
 );
 
 
+CREATE INDEX "IX_Certifications_UserId" ON "Certifications" ("UserId");
+
+
 CREATE INDEX "IX_Educations_UserId" ON "Educations" ("UserId");
 
 
 CREATE UNIQUE INDEX "IX_GithubRepos_UserId_GithubRepoId" ON "GithubRepos" ("UserId", "GithubRepoId");
+
+
+CREATE INDEX "IX_Languages_UserId" ON "Languages" ("UserId");
 
 
 CREATE UNIQUE INDEX "IX_Profiles_UserId" ON "Profiles" ("UserId");

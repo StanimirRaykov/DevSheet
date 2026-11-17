@@ -14,6 +14,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SkillAlias> SkillAliases => Set<SkillAlias>();
     public DbSet<WorkExperience> WorkExperiences => Set<WorkExperience>();
     public DbSet<Education> Educations => Set<Education>();
+    public DbSet<Language> Languages => Set<Language>();
+    public DbSet<Certification> Certifications => Set<Certification>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -26,6 +28,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasMany(x => x.Projects).WithOne().HasForeignKey(p => p.UserId);
             e.HasMany(x => x.WorkExperiences).WithOne().HasForeignKey(w => w.UserId);
             e.HasMany(x => x.Educations).WithOne().HasForeignKey(ed => ed.UserId);
+            e.HasMany(x => x.Languages).WithOne().HasForeignKey(l => l.UserId);
+            e.HasMany(x => x.Certifications).WithOne().HasForeignKey(c => c.UserId);
         });
         b.Entity<GithubRepo>().HasIndex(r => new { r.UserId, r.GithubRepoId }).IsUnique();
         b.Entity<ProjectSkill>().HasKey(ps => new { ps.ProjectId, ps.SkillId });
