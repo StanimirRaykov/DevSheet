@@ -35,6 +35,21 @@ export interface PublicPortfolio {
     skills: string[]; // confirmed only
   }[];
   skills: { name: string; projects: string[] }[]; // the matrix: skill -> projects
+  // email/location are null unless the owner opted in
+  profile: { fullName: string; headline: string; summary: string; location: string | null; email: string | null } | null;
+  experience: { company: string; title: string; startDate: string; endDate: string | null; description: string }[];
+  education: { institution: string; degree: string; startDate: string | null; endDate: string | null }[];
+}
+
+export interface ProfileData {
+  fullName: string; headline: string; summary: string; location: string; email: string;
+  showEmailPublicly: boolean; showLocationPublicly: boolean;
+}
+export interface ExperienceItem {
+  id: string; company: string; title: string; startDate: string; endDate: string | null; description: string;
+}
+export interface EducationItem {
+  id: string; institution: string; degree: string; startDate: string | null; endDate: string | null;
 }
 
 export function topLanguages(json: string, n = 3): string[] {

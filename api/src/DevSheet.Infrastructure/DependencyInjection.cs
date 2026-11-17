@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IGitHubRepoSource, OctokitRepoSource>();
         services.AddScoped<IGitHubSyncService, GitHubSyncService>();
         services.AddScoped<DevSheet.Infrastructure.Skills.ProjectSkillService>();
+        services.AddScoped<DevSheet.Infrastructure.Career.CareerService>();
         return services;
     }
 }

@@ -9,4 +9,7 @@ public class Profile
     public string Summary { get; set; } = "";
     public string Location { get; set; } = "";
     public string Email { get; set; } = "";
+    /// <summary>Privacy: email and location are never public unless the user opts in.</summary>
+    public bool ShowEmailPublicly { get; set; }
+    public bool ShowLocationPublicly { get; set; }
 }

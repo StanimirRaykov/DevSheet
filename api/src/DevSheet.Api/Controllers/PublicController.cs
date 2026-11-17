@@ -1,5 +1,6 @@
 using DevSheet.Application.Skills;
 using DevSheet.Domain.Entities;
+using DevSheet.Infrastructure.Career;
 using DevSheet.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,20 @@ public class PublicController(AppDbContext db) : ControllerBase
 
         var matrix = SkillMatrix.Build(projects.Select(p => (p.Title, (IEnumerable<string>)p.Skills)));
 
-        return Ok(new { u.GithubLogin, u.Slug, Projects = projects, Skills = matrix });
+        // Privacy: email and location are public only when the owner opted in. Names/headline/summary
+        // are public once the page is published.
+        var p = await db.Profiles.FirstOrDefaultAsync(x => x.UserId == u.Id);
+        object? profile = p is null ? null : new
+        {
+            p.FullName, p.Headline, p.Summary,
+            Location = p.ShowLocationPublicly ? p.Location : null,
+            Email = p.ShowEmailPublicly ? p.Email : null,
+        };
+        var experience = await db.WorkExperiences.Where(w => w.UserId == u.Id).NewestFirst()
+            .Select(w => new { w.Company, w.Title, w.StartDate, w.EndDate, w.Description }).ToListAsync();
+        var education = await db.Educations.Where(e => e.UserId == u.Id).NewestFirst()
+            .Select(e => new { e.Institution, e.Degree, e.StartDate, e.EndDate }).ToListAsync();
+
+        return Ok(new { u.GithubLogin, u.Slug, Profile = profile, Projects = projects, Skills = matrix, Experience = experience, Education = education });
     }
 }

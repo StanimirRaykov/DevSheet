@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { DashboardProject, ProjectStatus, PUBLIC_API, topLanguages } from "@/lib/api";
+import Link from "next/link";
 import { SkillRow } from "./skill-row";
 
 interface Me { githubLogin: string; slug: string; isPublished: boolean; lastSyncedAt: string | null }
@@ -65,6 +66,7 @@ export default function Dashboard() {
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Hi, {me!.githubLogin}</h1>
         <div className="flex gap-2">
+          <Link href="/dashboard/profile" className="rounded border px-4 py-2">Profile &amp; CV data</Link>
           <button onClick={sync} disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
             {busy ? "Syncing…" : "Sync now"}
           </button>
