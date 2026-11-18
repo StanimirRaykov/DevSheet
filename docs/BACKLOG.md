@@ -30,8 +30,8 @@ Workflow: see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 ### M3 Platform UI
 
 Turns DevSheet from a CV tool into a full platform: landing page, own login (GitHub, Google, Apple), settings,
-onboarding, one page per area, and a minimal design with motion. Suggested order: 26, 27, then 28 / 34 / 35 / 36 / 37 / 38 / 39
-in any order; 13 (migrations) before 29; then 30, 32, 33; 31 when a domain exists; 40 last.
+onboarding, one page per area, and a minimal design with motion. Agreed order: 26, 27, 13 (migrations), 42 (Docker), 29, 28, 30, 32, 33, then the pages 39, 35, 36, 37, 34, 38;
+25 (Europass XML) whenever the editor test is done; 40 last; 31 (Apple) only when a domain exists.
 
 | # | Issue | Depends on |
 |---|-------|-----------|
@@ -50,3 +50,4 @@ in any order; 13 (migrations) before 29; then 30, 32, 33; 31 when a domain exist
 | 38 | CV page (templates, preview, export) | 27 |
 | 39 | Public profile redesign | 26 |
 | 40 | Polish, accessibility, end-to-end tests | all M3 |
+| 42 | Docker: API and web containers, full stack | 13 |
