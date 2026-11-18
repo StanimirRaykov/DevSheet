@@ -25,3 +25,28 @@ Workflow: see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 | 16 | Deployment / CD | M2 |
 | 17 | README-rendered project pages | M2 |
 | 18 | Thesis: survey write-up | M2 |
+| 25 | CV export: Europass Candidate XML ([`europass-candidate-xml-export.md`](issues/europass-candidate-xml-export.md)) | M2 |
+
+### M3 Platform UI
+
+Turns DevSheet from a CV tool into a full platform: landing page, own login (GitHub, Google, Apple), settings,
+onboarding, one page per area, and a minimal design with motion. Suggested order: 26, 27, then 28 / 34 / 35 / 36 / 37 / 38 / 39
+in any order; 13 (migrations) before 29; then 30, 32, 33; 31 when a domain exists; 40 last.
+
+| # | Issue | Depends on |
+|---|-------|-----------|
+| 26 | UI foundation: design tokens, base components, motion | none |
+| 27 | Route structure, app shell, navigation | 26 |
+| 28 | Landing page, about, privacy, terms | 26, 27 |
+| 29 | Accounts independent of GitHub (multi-provider) | 13 |
+| 30 | Login page with GitHub and Google | 27, 28, 29 |
+| 31 | Sign in with Apple | 30, 16 |
+| 32 | Settings (account, connections, public page, delete) | 27, 29 |
+| 33 | Onboarding flow | 29, 32 |
+| 34 | Dashboard overview | 27 |
+| 35 | Projects page | 27 |
+| 36 | Skills page | 27 |
+| 37 | Profile and career pages | 26, 27 |
+| 38 | CV page (templates, preview, export) | 27 |
+| 39 | Public profile redesign | 26 |
+| 40 | Polish, accessibility, end-to-end tests | all M3 |
