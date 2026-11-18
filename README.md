@@ -59,7 +59,8 @@ The backlog lives in `docs/BACKLOG.md` and `docs/issues/` (detailed issues, crea
 
 ## Status
 - [x] Skeleton: layered API, Next.js app, schema, GitHub login + repo sync, approve/hide, public page
-- [ ] Skills detect / suggest / confirm
-- [ ] Work history + education forms
-- [ ] CV PDF (modern IT template), then Europass-style
+- [x] Skills detect / suggest / confirm, public skills matrix
+- [x] Profile, work history and education forms
+- [x] CV PDF (modern IT template) and a "Europass-style" PDF; languages with CEFR levels and certifications
+- [ ] Europass Candidate XML export (importable into the Europass editor), see [`docs/EUROPASS.md`](docs/EUROPASS.md)
 - Cut for now: custom domains, payments, live-demo iframes, per-job CV tailoring (future work)
