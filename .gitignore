@@ -14,5 +14,8 @@ out/
 .idea/
 *.tsbuildinfo
 
+# Personal handover notes for moving machines
+HANDOVER.md
+
 # Local reference PDFs from europass.europa.eu (7.5 MB; see docs/EUROPASS.md for the source links)
 europassXSDschema/
