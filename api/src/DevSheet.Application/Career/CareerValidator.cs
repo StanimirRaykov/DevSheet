@@ -1,11 +1,15 @@
 using System.Net.Mail;
+using System.Text.RegularExpressions;
+using DevSheet.Domain.Entities;
 
 namespace DevSheet.Application.Career;
 
 /// <summary>Pure validation. Returns field name (camelCase, as the API sends it) -> messages. Empty = valid.</summary>
 public static class CareerValidator
 {
-    public const int ShortMax = 200, LongMax = 2000, EmailMax = 254;
+    public const int ShortMax = 200, LongMax = 2000, EmailMax = 254, UrlMax = 2000;
+
+    private static readonly Regex IsoCode = new("^[a-z]{2}$", RegexOptions.Compiled);
 
     public static Dictionary<string, string[]> Validate(ProfileInput i)
     {
@@ -40,6 +44,40 @@ public static class CareerValidator
         e.Required("institution", i.Institution, ShortMax);
         e.MaxLength("degree", i.Degree, ShortMax);
         e.DateOrder("endDate", i.StartDate, i.EndDate);
+        return e.Result;
+    }
+
+    public static Dictionary<string, string[]> Validate(LanguageInput i)
+    {
+        var e = new Errors();
+        e.Required("name", i.Name, ShortMax);
+        var code = i.IsoCode?.Trim() ?? "";
+        if (code.Length > 0 && !IsoCode.IsMatch(code))
+            e.Add("isoCode", "Must be two lower-case letters (ISO 639-1), for example \"bg\".");
+
+        var levels = new[] { i.Listening, i.Reading, i.SpokenInteraction, i.SpokenProduction, i.Writing };
+        if (levels.Any(l => l is { } v && !Enum.IsDefined(v)))
+            e.Add("levels", "Levels must be A1, A2, B1, B2, C1 or C2.");
+        else if (i.IsMotherTongue && levels.Any(l => l is not null))
+            e.Add("levels", "A native language has no levels.");
+        return e.Result;
+    }
+
+    /// <param name="today">Passed in so the check is testable; an issue date in the future is rejected.</param>
+    public static Dictionary<string, string[]> Validate(CertificationInput i, DateOnly today)
+    {
+        var e = new Errors();
+        e.Required("name", i.Name, ShortMax);
+        e.MaxLength("issuer", i.Issuer, ShortMax);
+        if (i.IssueDate is { } d && d > today) e.Add("issueDate", "The issue date cannot be in the future.");
+
+        var url = i.Url?.Trim() ?? "";
+        if (url.Length > 0)
+        {
+            if (url.Length > UrlMax) e.Add("url", $"Must be at most {UrlMax} characters.");
+            else if (!Uri.TryCreate(url, UriKind.Absolute, out var u) || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps))
+                e.Add("url", "Must be a full http:// or https:// address.");
+        }
         return e.Result;
     }
 

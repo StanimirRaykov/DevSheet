@@ -5,9 +5,9 @@ import { EducationItem, ExperienceItem, ProfileData } from "@/lib/api";
 import { FieldErrors, send } from "@/lib/client";
 import { formatRange } from "@/lib/dates";
 
-const input = "w-full rounded border px-2 py-1 text-sm";
+export const input = "w-full rounded border px-2 py-1 text-sm";
 
-function Field({ label, errors, children }: { label: string; errors?: string[]; children: React.ReactNode }) {
+export function Field({ label, errors, children }: { label: string; errors?: string[]; children: React.ReactNode }) {
   return (
     <label className="block space-y-1 text-sm">
       <span className="font-medium">{label}</span>

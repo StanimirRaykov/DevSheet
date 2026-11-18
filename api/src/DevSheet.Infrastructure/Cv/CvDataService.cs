@@ -39,6 +39,9 @@ public class CvDataService(AppDbContext db)
         // Same ordering as the public matrix: most-used skills first.
         var skills = SkillMatrix.Build(projects.Select(p => (p.Title, p.Skills))).Select(m => m.Name).ToList();
 
+        var languages = await db.Languages.Where(l => l.UserId == userId).Ordered().ToListAsync(ct);
+        var certifications = await db.Certifications.Where(c => c.UserId == userId).NewestFirst().ToListAsync(ct);
+
         var name = string.IsNullOrWhiteSpace(profile?.FullName) ? user.GithubLogin : profile!.FullName;
         return new CvModel(
             name, profile?.Headline ?? "", profile?.Summary ?? "",
@@ -47,6 +50,11 @@ public class CvDataService(AppDbContext db)
             skills,
             experience.Select(w => new CvExperience(w.Title, w.Company, w.StartDate, w.EndDate, w.Description)).ToList(),
             education.Select(e => new CvEducation(e.Institution, e.Degree, e.StartDate, e.EndDate)).ToList(),
-            projects.Take(MaxProjects).Select(p => new CvProject(p.Title, p.Description, p.Url, p.Skills.ToList())).ToList());
+            projects.Take(MaxProjects).Select(p => new CvProject(p.Title, p.Description, p.Url, p.Skills.ToList())).ToList())
+        {
+            Languages = languages.Select(l => new CvLanguage(l.Name, l.IsMotherTongue,
+                l.Listening, l.Reading, l.SpokenInteraction, l.SpokenProduction, l.Writing)).ToList(),
+            Certifications = certifications.Select(c => new CvCertification(c.Name, c.Issuer, c.IssueDate, c.Url)).ToList(),
+        };
     }
 }

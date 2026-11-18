@@ -52,6 +52,15 @@ export interface EducationItem {
   id: string; institution: string; degree: string; startDate: string | null; endDate: string | null;
 }
 
+export interface LanguageItem {
+  id: string; name: string; isoCode: string | null; isMotherTongue: boolean;
+  listening: number | null; reading: number | null; spokenInteraction: number | null;
+  spokenProduction: number | null; writing: number | null; // CEFR 1 = A1 ... 6 = C2
+}
+export interface CertificationItem {
+  id: string; name: string; issuer: string; issueDate: string | null; url: string | null;
+}
+
 export function topLanguages(json: string, n = 3): string[] {
   try {
     const map = JSON.parse(json) as Record<string, number>;

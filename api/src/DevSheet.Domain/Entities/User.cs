@@ -17,4 +17,6 @@ public class User
     public List<Project> Projects { get; set; } = new();
     public List<WorkExperience> WorkExperiences { get; set; } = new();
     public List<Education> Educations { get; set; } = new();
+    public List<Language> Languages { get; set; } = new();
+    public List<Certification> Certifications { get; set; } = new();
 }

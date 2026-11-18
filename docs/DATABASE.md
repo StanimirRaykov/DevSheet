@@ -21,6 +21,8 @@ erDiagram
     Users ||--o{ Projects : owns
     Users ||--o{ WorkExperiences : has
     Users ||--o{ Educations : has
+    Users ||--o{ Languages : speaks
+    Users ||--o{ Certifications : holds
     GithubRepos |o--o{ Projects : "backs"
     Projects ||--o{ ProjectSkills : uses
     Skills ||--o{ ProjectSkills : "linked by"
@@ -101,6 +103,26 @@ erDiagram
         date StartDate
         date EndDate
     }
+    Languages {
+        uuid Id PK
+        uuid UserId FK
+        text Name
+        text IsoCode "optional ISO 639-1"
+        boolean IsMotherTongue
+        int Listening "CEFR 1=A1 .. 6=C2, nullable"
+        int Reading "nullable"
+        int SpokenInteraction "nullable"
+        int SpokenProduction "nullable"
+        int Writing "nullable"
+    }
+    Certifications {
+        uuid Id PK
+        uuid UserId FK
+        text Name "Europass: Title"
+        text Issuer "Europass: AwardingBody"
+        date IssueDate "nullable"
+        text Url "nullable, DevSheet addition"
+    }
 ```
 
 ## Design notes
@@ -117,6 +139,8 @@ erDiagram
   GitHub language names (e.g. `dockerfile`, `plpgsql`) to a skill. Skills are never created from raw GitHub strings.
 - **Privacy flags.** `Profiles.ShowEmailPublicly` and `ShowLocationPublicly` default to false; the public page
   omits email and location unless the owner opts in. Name, headline and summary are public once the page is published.
+- **Languages mirror Europass.** A foreign language is self-assessed in five skills, each an optional CEFR level stored as an
+  integer (1 = A1 ... 6 = C2); a native language has no levels. See `docs/EUROPASS.md`.
 - **Identity.** Users are keyed by GitHub's numeric id (`GithubId`), not the login, which can change.
   `Slug` is a separate, unique, public value.
 - **Deletes.** Deleting a user cascades to everything they own. `Projects.GithubRepoId` has no cascade:
