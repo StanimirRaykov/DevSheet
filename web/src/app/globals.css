@@ -112,6 +112,22 @@
   --shadow-sheet: 0 1px 1px rgb(21 26 34 / 0.04), 0 4px 16px -6px rgb(21 26 34 / 0.12);
 
   --ease-settle: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Motion only answers the user's action: something opens, closes or confirms. Radix sets data-state for these. */
+  --animate-fade-in: fade-in 160ms var(--ease-settle);
+  --animate-fade-out: fade-out 120ms ease-in;
+  --animate-dialog-in: dialog-in 200ms var(--ease-settle);
+  --animate-dialog-out: dialog-out 140ms ease-in;
+  --animate-menu-in: menu-in 140ms var(--ease-settle);
+  --animate-toast-in: toast-in 220ms var(--ease-settle);
+  --animate-toast-out: fade-out 160ms ease-in;
+
+  @keyframes fade-in { from { opacity: 0; } }
+  @keyframes fade-out { to { opacity: 0; } }
+  @keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+  @keyframes dialog-out { to { opacity: 0; transform: translateY(4px) scale(0.99); } }
+  @keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(12px); } }
 }
 
 body {
