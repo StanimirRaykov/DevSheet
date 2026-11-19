@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { AppShell, ShellFallback } from "@/components/app-shell/app-shell";
 import { MeProvider } from "@/components/me-provider";
 import { requireMe } from "@/lib/session";
 
@@ -10,9 +11,9 @@ async function Guarded({ children }: { children: ReactNode }) {
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<ShellFallback />}>
       <Guarded>
-        <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-8">{children}</main>
+        <AppShell>{children}</AppShell>
       </Guarded>
     </Suspense>
   );
