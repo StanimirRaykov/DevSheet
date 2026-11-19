@@ -8,6 +8,6 @@ export { Skeleton } from "./skeleton";
 export { EmptyState } from "./empty-state";
 export { Avatar, initials } from "./avatar";
 export { Dialog, DialogClose } from "./dialog";
-export { Menu, MenuItem, MenuLabel, MenuSeparator } from "./menu";
+export { Menu, MenuItem, MenuLabel, MenuSeparator, MenuRadioGroup, MenuRadioItem } from "./menu";
 export { Tabs, type TabItem } from "./tabs";
 export { ToastProvider, useToast, type ToastOptions } from "./toast";

@@ -1,6 +1,7 @@
 "use client";
 
 import * as RadixMenu from "@radix-ui/react-dropdown-menu";
+import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn";
 
@@ -54,4 +55,27 @@ export function MenuLabel({ children }: { children: ReactNode }) {
 
 export function MenuSeparator() {
   return <RadixMenu.Separator className="my-1 h-px bg-rule" />;
+}
+
+/** A set of mutually exclusive choices inside a menu (for example the theme). */
+export function MenuRadioGroup({ value, onValueChange, children }: { value: string; onValueChange: (value: string) => void; children: ReactNode }) {
+  return <RadixMenu.RadioGroup value={value} onValueChange={onValueChange}>{children}</RadixMenu.RadioGroup>;
+}
+
+export function MenuRadioItem({ value, icon, children }: { value: string; icon?: ReactNode; children: ReactNode }) {
+  return (
+    <RadixMenu.RadioItem
+      value={value}
+      // Keep the menu open so the effect of the choice is visible.
+      onSelect={(e) => e.preventDefault()}
+      className={cn(
+        "flex h-9 cursor-default items-center gap-2.5 rounded-control px-2.5 text-sm text-ink outline-none select-none",
+        "data-[highlighted]:bg-paper data-[state=checked]:text-accent",
+      )}
+    >
+      {icon && <span className="text-graphite in-data-[state=checked]:text-accent" aria-hidden>{icon}</span>}
+      <span className="flex-1">{children}</span>
+      <RadixMenu.ItemIndicator><Check aria-hidden size={15} /></RadixMenu.ItemIndicator>
+    </RadixMenu.RadioItem>
+  );
 }

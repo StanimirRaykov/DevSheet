@@ -69,3 +69,12 @@ export function topLanguages(json: string, n = 3): string[] {
     return [];
   }
 }
+
+/** The signed-in account, from GET /api/me. */
+export interface Me {
+  id: string;
+  githubLogin: string;
+  slug: string;
+  isPublished: boolean;
+  lastSyncedAt: string | null;
+}

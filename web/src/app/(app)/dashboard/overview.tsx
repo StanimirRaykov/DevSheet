@@ -1,27 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardProject, ProjectStatus, PUBLIC_API, topLanguages } from "@/lib/api";
+import { useMe } from "@/components/me-provider";
 import Link from "next/link";
 import { SkillRow } from "./skill-row";
-
-interface Me { githubLogin: string; slug: string; isPublished: boolean; lastSyncedAt: string | null }
 
 const call = (path: string, init?: RequestInit) =>
   fetch(`${PUBLIC_API}${path}`, { credentials: "include", ...init });
 
-export default function Dashboard() {
-  const [me, setMe] = useState<Me | null>(null);
+export function Overview() {
+  // The (app) layout has checked the login; router.refresh() reloads `me` after sync or publish.
+  const me = useMe();
+  const router = useRouter();
   const [projects, setProjects] = useState<DashboardProject[]>([]);
-  const [state, setState] = useState<"loading" | "anon" | "ready">("loading");
+  const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const r = await call("/api/me");
-    if (r.status === 401) return setState("anon");
-    setMe(await r.json());
     setProjects(await (await call("/api/me/projects")).json());
-    setState("ready");
+    setReady(true);
   }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -31,6 +30,7 @@ export default function Dashboard() {
     setBusy(true);
     await call("/api/me/sync", { method: "POST" });
     await load();
+    router.refresh();
     setBusy(false);
   }
   async function setStatus(id: string, status: ProjectStatus) {
@@ -53,19 +53,17 @@ export default function Dashboard() {
   }
   async function publish(value: boolean) {
     await call(`/api/me/publish?value=${value}`, { method: "POST" });
-    await load();
+    router.refresh();
   }
 
-  if (state === "loading") return <main className="p-8">Loading…</main>;
-  if (state === "anon")
-    return <main className="p-8"><a className="underline" href={`${PUBLIC_API}/auth/github`}>Sign in with GitHub</a></main>;
+  if (!ready) return <p>Loading…</p>;
 
   const label = ["Pending approval", "Visible", "Hidden"];
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Hi, {me!.githubLogin}</h1>
-        <div className="flex gap-2">
+    <div className="space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <h1 className="text-2xl font-bold">Hi, {me.githubLogin}</h1>
+        <div className="flex flex-wrap gap-2">
           <Link href="/dashboard/profile" className="rounded border px-4 py-2">Profile &amp; CV data</Link>
           {/* Plain link: the browser sends the login cookie and downloads the PDF the API returns. */}
           <a href={`${PUBLIC_API}/api/me/cv.pdf?template=modern`} className="rounded border px-4 py-2">Download CV</a>
@@ -73,13 +71,13 @@ export default function Dashboard() {
           <button onClick={sync} disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
             {busy ? "Syncing…" : "Sync now"}
           </button>
-          <button onClick={() => publish(!me!.isPublished)} className="rounded border px-4 py-2">
-            {me!.isPublished ? "Unpublish" : "Publish page"}
+          <button onClick={() => publish(!me.isPublished)} className="rounded border px-4 py-2">
+            {me.isPublished ? "Unpublish" : "Publish page"}
           </button>
         </div>
       </header>
-      {me!.isPublished && (
-        <p className="text-sm text-neutral-600">Public page: <a className="underline" href={`/${me!.slug}`}>/{me!.slug}</a></p>
+      {me.isPublished && (
+        <p className="text-sm text-neutral-600">Public page: <a className="underline" href={`/${me.slug}`}>/{me.slug}</a></p>
       )}
       <ul className="space-y-3">
         {projects.map((p) => (
@@ -107,6 +105,6 @@ export default function Dashboard() {
         ))}
         {projects.length === 0 && <li className="text-neutral-500">No projects yet — click “Sync now”.</li>}
       </ul>
-    </main>
+    </div>
   );
 }
