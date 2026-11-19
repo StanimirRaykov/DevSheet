@@ -146,5 +146,6 @@ erDiagram
 - **Deletes.** Deleting a user cascades to everything they own. `Projects.GithubRepoId` has no cascade:
   a repo row cannot be deleted while a project references it (repos that vanish from GitHub are flagged
   `SourceMissing`, not deleted).
-- **Migrations.** Until issue #13 the tables are created with `EnsureCreated()`. After a model change
-  during development, reset the database: `docker compose down -v && docker compose up -d`.
+- **Migrations.** The schema is managed with EF Core migrations (see the README for the commands). Development
+  applies them on start; production runs `DevSheet.Api --migrate` as a separate step. Local databases created
+  with `EnsureCreated()` before issue #13 are recognised and marked as being at `InitialCreate`, so their data is kept.

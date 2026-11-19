@@ -42,11 +42,23 @@ Prerequisites: .NET 8 SDK, Node 20+, PostgreSQL (Docker or local).
    cd web && npm install && npm run dev   # http://localhost:3000
    ```
 
-Dev note: tables are created with `EnsureCreated()` for the demo; switch to EF migrations before deploying.
+In Development the API applies EF Core migrations on start, so the database is always up to date.
 
 ## Database
 
 ER diagram and design notes: [`docs/DATABASE.md`](docs/DATABASE.md). Full DDL: [`docs/schema.sql`](docs/schema.sql) (generated from the EF model and checked by a test).
+
+Schema changes go through EF Core migrations (`api/src/DevSheet.Infrastructure/Persistence/Migrations`). From the `api/` folder:
+```bash
+dotnet tool restore                                     # installs dotnet-ef (pinned in .config/dotnet-tools.json)
+dotnet ef migrations add <Name> --project src/DevSheet.Infrastructure --startup-project src/DevSheet.Api --output-dir Persistence/Migrations
+UPDATE_SCHEMA=1 dotnet test --filter SchemaScriptTests  # refresh docs/schema.sql
+```
+Production never migrates on start. Apply migrations as a separate step before starting the new version:
+```bash
+dotnet DevSheet.Api.dll --migrate                       # applies migrations, seeds skills, exits
+```
+A test and a CI step fail when the model changes without a migration.
 
 ## Tests and CI
 
