@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AspNet.Security.OAuth.GitHub;
+using DevSheet.Domain;
 using DevSheet.Domain.Entities;
 using DevSheet.Application.Abstractions;
 using DevSheet.Infrastructure;
@@ -51,7 +52,7 @@ builder.Services
             var user = await db.Users.FirstOrDefaultAsync(u => u.GithubId == githubId);
             if (user is null)
             {
-                user = new User { GithubId = githubId, GithubLogin = login, Slug = login.ToLowerInvariant() };
+                user = new User { GithubId = githubId, GithubLogin = login, Slug = ReservedSlugs.DefaultFor(login, githubId) };
                 db.Users.Add(user);
             }
             user.GithubLogin = login;
