@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { CertificationItem, EducationItem, ExperienceItem, LanguageItem, ProfileData, PUBLIC_API } from "@/lib/api";
+import { CertificationItem, EducationItem, ExperienceItem, LanguageItem, ProfileData } from "@/lib/api";
 import { send } from "@/lib/client";
 import { EducationSection, ExperienceSection, ProfileForm } from "./forms";
 import { CertificationsSection, LanguagesSection } from "./languages-certs";
 
-export default function ProfilePage() {
-  const [state, setState] = useState<"loading" | "anon" | "ready">("loading");
+export function ProfileEditor() {
+  const [state, setState] = useState<"loading" | "error" | "ready">("loading");
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [experience, setExperience] = useState<ExperienceItem[]>([]);
   const [education, setEducation] = useState<EducationItem[]>([]);
@@ -23,8 +23,8 @@ export default function ProfilePage() {
       send<LanguageItem[]>("/api/me/languages"),
       send<CertificationItem[]>("/api/me/certifications"),
     ]);
-    if ([p, x, e, l, c].some((r) => r.status === 401)) return setState("anon");
-    if (!p.data || !x.data || !e.data || !l.data || !c.data) return setState("anon");
+    // The (app) layout has checked the login, so a failure here is a server problem.
+    if (!p.data || !x.data || !e.data || !l.data || !c.data) return setState("error");
     setProfile(p.data);
     setExperience(x.data);
     setEducation(e.data);
@@ -36,12 +36,12 @@ export default function ProfilePage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
-  if (state === "loading") return <main className="p-8">Loading…</main>;
-  if (state === "anon" || !profile)
-    return <main className="p-8"><a className="underline" href={`${PUBLIC_API}/auth/github`}>Sign in with GitHub</a></main>;
+  if (state === "loading") return <p>Loading…</p>;
+  if (state === "error" || !profile)
+    return <p role="alert">Your profile could not be loaded. Reload the page to try again.</p>;
 
   return (
-    <main className="mx-auto max-w-3xl space-y-10 p-8">
+    <div className="space-y-10">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Profile and CV data</h1>
         <Link href="/dashboard" className="text-sm underline">← Back to projects</Link>
@@ -51,6 +51,6 @@ export default function ProfilePage() {
       <section className="space-y-3"><h2 className="text-xl font-semibold">Education</h2><EducationSection items={education} onChange={load} /></section>
       <section className="space-y-3"><h2 className="text-xl font-semibold">Languages</h2><LanguagesSection items={languages} onChange={load} /></section>
       <section className="space-y-3"><h2 className="text-xl font-semibold">Certifications</h2><CertificationsSection items={certifications} onChange={load} /></section>
-    </main>
+    </div>
   );
 }
