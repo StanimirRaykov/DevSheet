@@ -67,15 +67,20 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// `DevSheet.Api --migrate` applies migrations and seeds, then exits. This is the explicit
+// database step for production (and for the Docker setup); the server itself never migrates there.
+if (args.Contains("--migrate"))
+{
+    await MigrateDatabaseAsync(app);
+    return;
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    // Demo shortcut: create tables directly. Switch to EF migrations before real deployment.
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
-    await SkillSeeder.SeedAsync(db);
+    // Local convenience: keep the database up to date on every start.
+    await MigrateDatabaseAsync(app);
 }
 
 app.UseCors();
@@ -83,6 +88,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+static async Task MigrateDatabaseAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await DatabaseMigrator.MigrateAsync(db, app.Logger);
+}
 
 // Needed so integration tests can start the app with WebApplicationFactory<Program>.
 public partial class Program { }
