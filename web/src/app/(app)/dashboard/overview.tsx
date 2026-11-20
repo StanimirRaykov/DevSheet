@@ -68,9 +68,15 @@ export function Overview() {
           {/* Plain link: the browser sends the login cookie and downloads the PDF the API returns. */}
           <a href={`${PUBLIC_API}/api/me/cv.pdf?template=modern`} className="rounded border px-4 py-2">Download CV</a>
           <a href={`${PUBLIC_API}/api/me/cv.pdf?template=europass`} className="rounded border px-4 py-2" title="Follows the Europass layout; not an official Europass file">Europass-style CV</a>
-          <button onClick={sync} disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-            {busy ? "Syncing…" : "Sync now"}
-          </button>
+          {me.github ? (
+            <button onClick={sync} disabled={busy} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
+              {busy ? "Syncing…" : "Sync now"}
+            </button>
+          ) : (
+            <a href={`${PUBLIC_API}/auth/github/connect?next=/dashboard`} className="rounded bg-black px-4 py-2 text-white">
+              Connect GitHub
+            </a>
+          )}
           <button onClick={() => publish(!me.isPublished)} className="rounded border px-4 py-2">
             {me.isPublished ? "Unpublish" : "Publish page"}
           </button>
@@ -103,7 +109,11 @@ export function Overview() {
             />
           </li>
         ))}
-        {projects.length === 0 && <li className="text-neutral-500">No projects yet — click “Sync now”.</li>}
+        {projects.length === 0 && (
+          <li className="text-neutral-500">
+            {me.github ? "No projects yet. Click “Sync now”." : "No projects yet. Connect GitHub to import your repositories."}
+          </li>
+        )}
       </ul>
     </div>
   );

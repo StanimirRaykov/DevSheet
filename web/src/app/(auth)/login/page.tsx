@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { buttonClasses, Sheet, Skeleton } from "@/components/ui";
 import { PUBLIC_API } from "@/lib/api";
+import { authErrorMessage } from "@/lib/auth-errors";
 import { safeNext } from "@/lib/redirect";
 import { getMe } from "@/lib/session";
 
@@ -17,17 +18,23 @@ function GithubMark() {
   );
 }
 
-async function SignInOptions({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
-  const raw = (await searchParams).next;
-  const next = safeNext(Array.isArray(raw) ? raw[0] : raw);
+async function SignInOptions({ searchParams }: { searchParams: Promise<{ next?: string | string[]; error?: string | string[] }> }) {
+  const params = await searchParams;
+  const next = safeNext(Array.isArray(params.next) ? params.next[0] : params.next);
+  const error = authErrorMessage(params.error);
   // Already signed in: skip the page.
   if (await getMe()) redirect(next);
 
   return (
-    <a href={`${PUBLIC_API}/auth/github?next=${encodeURIComponent(next)}`} className={buttonClasses("primary", "md", "w-full")}>
-      <GithubMark />
-      Continue with GitHub
-    </a>
+    <div className="flex flex-col gap-4">
+      {error && (
+        <p role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-ink">{error}</p>
+      )}
+      <a href={`${PUBLIC_API}/auth/github?next=${encodeURIComponent(next)}`} className={buttonClasses("primary", "md", "w-full")}>
+        <GithubMark />
+        Continue with GitHub
+      </a>
+    </div>
   );
 }
 

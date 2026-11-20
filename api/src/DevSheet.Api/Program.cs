@@ -3,6 +3,7 @@ using AspNet.Security.OAuth.GitHub;
 using DevSheet.Domain.Entities;
 using DevSheet.Application.Abstractions;
 using DevSheet.Infrastructure;
+using DevSheet.Api;
 using DevSheet.Infrastructure.Accounts;
 using DevSheet.Infrastructure.Persistence;
 using DevSheet.Infrastructure.Security;
@@ -48,23 +49,19 @@ builder.Services
         o.Scope.Add("read:user"); // public data only; no private-repo access
         o.SaveTokens = false;     // we store the token ourselves, encrypted
         o.ClaimActions.MapJsonKey(AvatarClaim, "avatar_url");
-        o.Events.OnCreatingTicket = async ctx =>
+        o.Events.OnCreatingTicket = ctx =>
         {
-            var accounts = ctx.HttpContext.RequestServices.GetRequiredService<AccountService>();
             var githubId = long.Parse(ctx.Principal!.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var login = ctx.Principal.FindFirstValue(ClaimTypes.Name) ?? $"user{githubId}";
             var name = ctx.Principal.FindFirstValue(GitHubAuthenticationConstants.Claims.Name);
-
-            var user = await accounts.SignInAsync(
+            return ExternalAuth.CompleteAsync(ctx,
                 new ExternalIdentity(LoginProviders.GitHub, githubId.ToString(),
                     DisplayName: string.IsNullOrWhiteSpace(name) ? login : name,
                     Email: ctx.Principal.FindFirstValue(ClaimTypes.Email),
                     AvatarUrl: ctx.Principal.FindFirstValue(AvatarClaim)),
                 new GithubGrant(githubId, login, ctx.AccessToken!));
-
-            // Identity key in the cookie is OUR user id.
-            ((ClaimsIdentity)ctx.Principal.Identity!).AddClaim(new Claim("devsheet:uid", user.Id.ToString()));
         };
+        o.Events.OnRemoteFailure = ctx => ExternalAuth.OnRemoteFailure(ctx, webOrigin);
     });
 builder.Services.AddAuthorization();
 

@@ -15,6 +15,10 @@ API layers: `Domain` (entities) ← `Application` (interfaces) ← `Infrastructu
 encryption) ← `Api` (controllers, auth).
 
 Key design decisions
+- **Accounts stand on their own.** A DevSheet account can have several sign-in methods (GitHub now; Google and Apple
+  planned) and, separately, one connected GitHub account that repositories sync from. Accounts are never matched by
+  email; a second sign-in method is added only while signed in (`GET /auth/link/{provider}`), and the last one cannot
+  be removed. Disconnecting GitHub deletes its token and keeps the synced projects.
 - **Two data layers.** `GithubRepo` is a read-only synced copy; `Project` is the user-owned layer that survives re-sync.
 - **Approve-first.** Newly synced repos are `Pending` and never public until the user approves them.
 - **Rejected skill links are kept**, so dismissed suggestions are not proposed again.

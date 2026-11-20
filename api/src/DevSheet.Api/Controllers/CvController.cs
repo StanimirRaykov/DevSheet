@@ -9,7 +9,7 @@ namespace DevSheet.Api.Controllers;
 [ApiController, Route("api/me"), Authorize]
 public class CvController(CvDataService data, AppDbContext db) : ControllerBase
 {
-    private Guid Uid => Guid.Parse(User.FindFirst("devsheet:uid")!.Value);
+    private Guid Uid => Guid.Parse(User.FindFirst(ExternalAuth.UserIdClaim)!.Value);
 
     /// <summary>Download my CV as a PDF built from my confirmed data. template: modern (default) or europass (Europass-style, not an official Europass file).</summary>
     [HttpGet("cv.pdf")]

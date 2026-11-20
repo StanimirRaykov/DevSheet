@@ -17,5 +17,5 @@ public static class LocalPath
         && !path.Contains('\\')
         && !path.Any(char.IsControl);
 
-    public static string OrFallback(string? path) => IsSafe(path) ? path! : Fallback;
+    public static string OrFallback(string? path, string fallback = Fallback) => IsSafe(path) ? path! : fallback;
 }

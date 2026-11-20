@@ -8,7 +8,7 @@ namespace DevSheet.Api.Controllers;
 [ApiController, Route("api/me"), Authorize]
 public class CareerController(CareerService career) : ControllerBase
 {
-    private Guid Uid => Guid.Parse(User.FindFirst("devsheet:uid")!.Value);
+    private Guid Uid => Guid.Parse(User.FindFirst(ExternalAuth.UserIdClaim)!.Value);
 
     private IActionResult Map<T>(Result<T> r) => r.Outcome switch
     {
