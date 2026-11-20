@@ -26,7 +26,7 @@ Key design decisions
 
 Prerequisites: .NET 8 SDK, Node 20+, PostgreSQL (Docker or local).
 
-1. Database: `docker compose up -d` (or point `ConnectionStrings:Default` at your own Postgres).
+1. Database: `docker compose up -d db` (or point `ConnectionStrings:Default` at your own Postgres).
 2. Register a GitHub OAuth app (Settings → Developer settings → OAuth Apps):
    - Homepage URL: `http://localhost:3000`
    - Callback URL: `http://localhost:5217/signin-github`
@@ -43,6 +43,22 @@ Prerequisites: .NET 8 SDK, Node 20+, PostgreSQL (Docker or local).
    ```
 
 In Development the API applies EF Core migrations on start, so the database is always up to date.
+
+## Run with Docker
+
+The whole platform (database, API, web) with only Docker installed:
+
+```bash
+cp .env.example .env      # fill in GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET (same OAuth app as above)
+docker compose up --build # web http://localhost:3000, API http://localhost:5217
+```
+
+- Start order: `db` (healthy), then `migrate` (applies migrations and seeds skills, then exits), then `api` (healthy at `/health`), then `web`.
+- The API runs as Production inside Docker: no Swagger, and it does not migrate on start; the `migrate` service does that.
+- Data Protection keys live in the `dpkeys` volume, so `docker compose restart api` keeps you logged in and stored GitHub tokens stay readable.
+- `NEXT_PUBLIC_API_URL` is baked into the web image at build time (the browser uses it). Rebuild the `web` image if it changes.
+- Daily development stays on the host with hot reload; `docker compose up -d db` starts only the database.
+- `docker compose down` stops everything; add `-v` to also delete the database and the keys.
 
 ## Database
 

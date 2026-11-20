@@ -9,6 +9,8 @@ node_modules/
 out/
 .env.local
 .env*.local
+# Docker compose secrets (copy .env.example)
+.env
 # OS / editor
 .DS_Store
 .idea/
