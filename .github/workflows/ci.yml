@@ -24,6 +24,10 @@ jobs:
       - run: dotnet restore
       - run: dotnet build --no-restore -c Release
       - run: dotnet test --no-build -c Release --logger "trx;LogFileName=results.trx"
+      - name: Fail if the model changed without a migration
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --no-build --configuration Release --project src/DevSheet.Infrastructure --startup-project src/DevSheet.Api
       - uses: actions/upload-artifact@v4
         if: always()
         with:

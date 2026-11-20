@@ -12,12 +12,13 @@ describe("Toast", () => {
   it("appears and closes on its own after its duration", async () => {
     render(
       <ToastProvider>
-        <Trigger title="Project hidden" duration={50} />
+        {/* Long enough to be seen on a slow CI runner (50 ms was sometimes gone before the first check). */}
+        <Trigger title="Project hidden" duration={1000} />
       </ToastProvider>,
     );
     await userEvent.click(screen.getByRole("button", { name: "Show" }));
     expect(await screen.findByText("Project hidden")).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText("Project hidden")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("Project hidden")).toBeNull(), { timeout: 3000 });
   });
 
   it("runs its action (Undo)", async () => {
