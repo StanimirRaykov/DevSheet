@@ -20,7 +20,7 @@ async function loadPortfolio(slug: string): Promise<PublicPortfolio | null> {
 export async function generateMetadata({ params }: PageProps<"/[slug]">): Promise<Metadata> {
   const data = await loadPortfolio((await params).slug);
   if (!data) return { title: "Page not found" };
-  const name = data.profile?.fullName || data.githubLogin;
+  const name = data.profile?.fullName || data.displayName;
   return { title: name, description: data.profile?.headline || `${name}'s projects and skills.` };
 }
 
@@ -32,7 +32,7 @@ async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
   return (
     <>
       <header className="space-y-1">
-        <h1 className="text-3xl font-bold">{data.profile?.fullName || data.githubLogin}</h1>
+        <h1 className="text-3xl font-bold">{data.profile?.fullName || data.displayName}</h1>
         {data.profile?.headline && <p className="text-lg text-neutral-700">{data.profile.headline}</p>}
         <p className="text-sm text-neutral-500">
           {[data.profile?.location, data.profile?.email].filter(Boolean).join(" · ")}

@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<DevSheet.Infrastructure.Skills.ProjectSkillService>();
         services.AddScoped<DevSheet.Infrastructure.Career.CareerService>();
         services.AddScoped<DevSheet.Infrastructure.Cv.CvDataService>();
+        services.AddScoped<DevSheet.Infrastructure.Accounts.AccountService>();
         return services;
     }
 }

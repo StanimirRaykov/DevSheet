@@ -1,16 +1,19 @@
 using System.Security.Claims;
 using AspNet.Security.OAuth.GitHub;
-using DevSheet.Domain;
 using DevSheet.Domain.Entities;
 using DevSheet.Application.Abstractions;
 using DevSheet.Infrastructure;
+using DevSheet.Api;
+using DevSheet.Infrastructure.Accounts;
 using DevSheet.Infrastructure.Persistence;
 using DevSheet.Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var webOrigin = builder.Configuration["WebOrigin"]!;
+const string AvatarClaim = "urn:github:avatar";
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -45,26 +48,20 @@ builder.Services
         o.ClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"] is { Length: > 0 } s ? s : "unset";
         o.Scope.Add("read:user"); // public data only; no private-repo access
         o.SaveTokens = false;     // we store the token ourselves, encrypted
-        o.Events.OnCreatingTicket = async ctx =>
+        o.ClaimActions.MapJsonKey(AvatarClaim, "avatar_url");
+        o.Events.OnCreatingTicket = ctx =>
         {
-            var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
-            var protector = ctx.HttpContext.RequestServices.GetRequiredService<ITokenProtector>();
             var githubId = long.Parse(ctx.Principal!.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var login = ctx.Principal.FindFirstValue(ClaimTypes.Name) ?? $"user{githubId}";
-
-            var user = await db.Users.FirstOrDefaultAsync(u => u.GithubId == githubId);
-            if (user is null)
-            {
-                user = new User { GithubId = githubId, GithubLogin = login, Slug = ReservedSlugs.DefaultFor(login, githubId) };
-                db.Users.Add(user);
-            }
-            user.GithubLogin = login;
-            user.EncryptedGithubToken = protector.Protect(ctx.AccessToken!);
-            await db.SaveChangesAsync();
-
-            // Identity key in the cookie is OUR user id.
-            ((ClaimsIdentity)ctx.Principal.Identity!).AddClaim(new Claim("devsheet:uid", user.Id.ToString()));
+            var name = ctx.Principal.FindFirstValue(GitHubAuthenticationConstants.Claims.Name);
+            return ExternalAuth.CompleteAsync(ctx,
+                new ExternalIdentity(LoginProviders.GitHub, githubId.ToString(),
+                    DisplayName: string.IsNullOrWhiteSpace(name) ? login : name,
+                    Email: ctx.Principal.FindFirstValue(ClaimTypes.Email),
+                    AvatarUrl: ctx.Principal.FindFirstValue(AvatarClaim)),
+                new GithubGrant(githubId, login, ctx.AccessToken!));
         };
+        o.Events.OnRemoteFailure = ctx => ExternalAuth.OnRemoteFailure(ctx, webOrigin);
     });
 builder.Services.AddAuthorization();
 

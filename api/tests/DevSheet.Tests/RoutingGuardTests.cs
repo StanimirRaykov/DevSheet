@@ -32,9 +32,33 @@ public class RoutingGuardTests
     [InlineData("settings")]
     public void Route_names_are_reserved(string slug) => Assert.True(ReservedSlugs.IsReserved(slug));
 
-    [Fact]
-    public void Ordinary_login_keeps_its_slug() => Assert.Equal("maria-p", ReservedSlugs.DefaultFor("Maria-P", 42));
+    [Theory]
+    [InlineData("Maria-P", "maria-p")]
+    [InlineData("María López", "maria-lopez")]
+    [InlineData("  --Jo__Ann!! ", "jo-ann")]
+    [InlineData("Li", "user-li")]
+    [InlineData("", "user")]
+    [InlineData("😀", "user")]
+    public void Names_become_slug_shaped(string name, string slug) => Assert.Equal(slug, SlugRules.FromName(name));
 
     [Fact]
-    public void Reserved_login_gets_a_suffix() => Assert.Equal("settings-42", ReservedSlugs.DefaultFor("Settings", 42));
+    public void Long_names_are_cut_without_a_trailing_hyphen() =>
+        Assert.Equal("abcdefghij-abcdefghij-abcdefgh", SlugRules.FromName("abcdefghij abcdefghij abcdefgh-ijk"));
+
+    [Fact]
+    public void Reserved_name_skips_to_a_numbered_slug() =>
+        Assert.Equal(["settings-2", "settings-3"], SlugRules.Candidates("Settings").Take(2));
+
+    [Fact]
+    public void Numbered_slugs_stay_within_the_length_limit() =>
+        Assert.All(SlugRules.Candidates(new string('a', 40)).Take(12), s => Assert.True(SlugRules.IsValid(s), s));
+
+    [Theory]
+    [InlineData("maria", true)]
+    [InlineData("ab", false)]
+    [InlineData("-maria", false)]
+    [InlineData("maria-", false)]
+    [InlineData("Maria", false)]
+    [InlineData("dashboard", false)]
+    public void Slug_validity(string slug, bool valid) => Assert.Equal(valid, SlugRules.IsValid(slug));
 }

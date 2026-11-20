@@ -12,12 +12,13 @@ CREATE TABLE "Skills" (
 
 CREATE TABLE "Users" (
     "Id" uuid NOT NULL,
-    "GithubId" bigint NOT NULL,
-    "GithubLogin" text NOT NULL,
+    "DisplayName" text NOT NULL,
+    "Email" text,
+    "AvatarUrl" text,
     "Slug" text NOT NULL,
     "IsPublished" boolean NOT NULL,
-    "EncryptedGithubToken" text,
-    "LastSyncedAt" timestamp with time zone,
+    "CreatedAt" timestamp with time zone NOT NULL,
+    "OnboardingCompletedAt" timestamp with time zone,
     CONSTRAINT "PK_Users" PRIMARY KEY ("Id")
 );
 
@@ -52,6 +53,30 @@ CREATE TABLE "Educations" (
     "EndDate" date,
     CONSTRAINT "PK_Educations" PRIMARY KEY ("Id"),
     CONSTRAINT "FK_Educations_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+);
+
+
+CREATE TABLE "ExternalLogins" (
+    "Id" uuid NOT NULL,
+    "UserId" uuid NOT NULL,
+    "Provider" character varying(20) NOT NULL,
+    "ProviderKey" text NOT NULL,
+    "Email" text,
+    "CreatedAt" timestamp with time zone NOT NULL,
+    CONSTRAINT "PK_ExternalLogins" PRIMARY KEY ("Id"),
+    CONSTRAINT "FK_ExternalLogins_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+);
+
+
+CREATE TABLE "GithubConnections" (
+    "UserId" uuid NOT NULL,
+    "GithubId" bigint NOT NULL,
+    "Login" text NOT NULL,
+    "EncryptedToken" text NOT NULL,
+    "ConnectedAt" timestamp with time zone NOT NULL,
+    "LastSyncedAt" timestamp with time zone,
+    CONSTRAINT "PK_GithubConnections" PRIMARY KEY ("UserId"),
+    CONSTRAINT "FK_GithubConnections_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
 );
 
 
@@ -147,6 +172,15 @@ CREATE INDEX "IX_Certifications_UserId" ON "Certifications" ("UserId");
 CREATE INDEX "IX_Educations_UserId" ON "Educations" ("UserId");
 
 
+CREATE UNIQUE INDEX "IX_ExternalLogins_Provider_ProviderKey" ON "ExternalLogins" ("Provider", "ProviderKey");
+
+
+CREATE INDEX "IX_ExternalLogins_UserId" ON "ExternalLogins" ("UserId");
+
+
+CREATE UNIQUE INDEX "IX_GithubConnections_GithubId" ON "GithubConnections" ("GithubId");
+
+
 CREATE UNIQUE INDEX "IX_GithubRepos_UserId_GithubRepoId" ON "GithubRepos" ("UserId", "GithubRepoId");
 
 
@@ -172,9 +206,6 @@ CREATE INDEX "IX_SkillAliases_SkillId" ON "SkillAliases" ("SkillId");
 
 
 CREATE UNIQUE INDEX "IX_Skills_Name" ON "Skills" ("Name");
-
-
-CREATE UNIQUE INDEX "IX_Users_GithubId" ON "Users" ("GithubId");
 
 
 CREATE UNIQUE INDEX "IX_Users_Slug" ON "Users" ("Slug");

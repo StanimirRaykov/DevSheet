@@ -82,6 +82,70 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.ToTable("Educations");
                 });
 
+            modelBuilder.Entity("DevSheet.Domain.Entities.ExternalLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ProviderKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Provider", "ProviderKey")
+                        .IsUnique();
+
+                    b.ToTable("ExternalLogins");
+                });
+
+            modelBuilder.Entity("DevSheet.Domain.Entities.GithubConnection", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ConnectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EncryptedToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("GithubId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Login")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("GithubId")
+                        .IsUnique();
+
+                    b.ToTable("GithubConnections");
+                });
+
             modelBuilder.Entity("DevSheet.Domain.Entities.GithubRepo", b =>
                 {
                     b.Property<Guid>("Id")
@@ -317,20 +381,23 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("EncryptedGithubToken")
+                    b.Property<string>("AvatarUrl")
                         .HasColumnType("text");
 
-                    b.Property<long>("GithubId")
-                        .HasColumnType("bigint");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("GithubLogin")
+                    b.Property<string>("DisplayName")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
                         .HasColumnType("text");
 
                     b.Property<bool>("IsPublished")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("LastSyncedAt")
+                    b.Property<DateTime?>("OnboardingCompletedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Slug")
@@ -338,9 +405,6 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("GithubId")
-                        .IsUnique();
 
                     b.HasIndex("Slug")
                         .IsUnique();
@@ -396,6 +460,26 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.HasOne("DevSheet.Domain.Entities.User", null)
                         .WithMany("Educations")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DevSheet.Domain.Entities.ExternalLogin", b =>
+                {
+                    b.HasOne("DevSheet.Domain.Entities.User", "User")
+                        .WithMany("Logins")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DevSheet.Domain.Entities.GithubConnection", b =>
+                {
+                    b.HasOne("DevSheet.Domain.Entities.User", null)
+                        .WithOne("GithubConnection")
+                        .HasForeignKey("DevSheet.Domain.Entities.GithubConnection", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -492,7 +576,11 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Educations");
 
+                    b.Navigation("GithubConnection");
+
                     b.Navigation("Languages");
+
+                    b.Navigation("Logins");
 
                     b.Navigation("Profile");
 

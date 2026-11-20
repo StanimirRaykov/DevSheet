@@ -15,7 +15,7 @@ public class CvDataService(AppDbContext db)
 
     public async Task<CvModel?> BuildAsync(Guid userId, CancellationToken ct = default)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var user = await db.Users.Include(u => u.GithubConnection).FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null) return null;
 
         var profile = await db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId, ct);
@@ -42,11 +42,11 @@ public class CvDataService(AppDbContext db)
         var languages = await db.Languages.Where(l => l.UserId == userId).Ordered().ToListAsync(ct);
         var certifications = await db.Certifications.Where(c => c.UserId == userId).NewestFirst().ToListAsync(ct);
 
-        var name = string.IsNullOrWhiteSpace(profile?.FullName) ? user.GithubLogin : profile!.FullName;
+        var name = string.IsNullOrWhiteSpace(profile?.FullName) ? user.DisplayName : profile!.FullName;
         return new CvModel(
             name, profile?.Headline ?? "", profile?.Summary ?? "",
             profile?.Email ?? "", profile?.Location ?? "",
-            $"github.com/{user.GithubLogin}",
+            user.GithubConnection is { } gh ? $"github.com/{gh.Login}" : "",
             skills,
             experience.Select(w => new CvExperience(w.Title, w.Company, w.StartDate, w.EndDate, w.Description)).ToList(),
             education.Select(e => new CvEducation(e.Institution, e.Degree, e.StartDate, e.EndDate)).ToList(),

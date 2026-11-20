@@ -1,5 +1,6 @@
 using DevSheet.Application.Abstractions;
 using DevSheet.Domain.Entities;
+using DevSheet.Infrastructure.Accounts;
 using DevSheet.Infrastructure.Persistence;
 using DevSheet.Infrastructure.Skills;
 using Microsoft.AspNetCore.Authorization;
@@ -9,17 +10,47 @@ using Microsoft.EntityFrameworkCore;
 namespace DevSheet.Api.Controllers;
 
 [ApiController, Route("api/me"), Authorize]
-public class MeController(AppDbContext db, IGitHubSyncService sync, ProjectSkillService skills) : ControllerBase
+public class MeController(AppDbContext db, IGitHubSyncService sync, ProjectSkillService skills, AccountService accounts) : ControllerBase
 {
-    private Guid Uid => Guid.Parse(User.FindFirst("devsheet:uid")!.Value);
+    private Guid Uid => Guid.Parse(User.FindFirst(ExternalAuth.UserIdClaim)!.Value);
 
     [HttpGet]
     public async Task<IActionResult> Get() =>
         Ok(await db.Users.Where(u => u.Id == Uid)
-            .Select(u => new { u.Id, u.GithubLogin, u.Slug, u.IsPublished, u.LastSyncedAt }).FirstAsync());
+            .Select(u => new
+            {
+                u.Id, u.DisplayName, u.AvatarUrl, u.Slug, u.IsPublished,
+                Github = u.GithubConnection == null ? null : new { u.GithubConnection.Login, u.GithubConnection.LastSyncedAt },
+            }).FirstAsync());
 
     [HttpPost("sync")]
-    public async Task<IActionResult> Sync() => Ok(new { added = await sync.SyncAsync(Uid) });
+    public async Task<IActionResult> Sync()
+    {
+        if (!await db.GithubConnections.AnyAsync(c => c.UserId == Uid))
+            return Conflict(new { error = "Connect GitHub to sync your repositories." });
+        return Ok(new { added = await sync.SyncAsync(Uid) });
+    }
+
+    /// <summary>The ways this account can sign in.</summary>
+    [HttpGet("logins")]
+    public async Task<IActionResult> Logins() =>
+        Ok(await db.ExternalLogins.Where(l => l.UserId == Uid).OrderBy(l => l.CreatedAt)
+            .Select(l => new { l.Provider, l.Email, l.CreatedAt }).ToListAsync());
+
+    /// <summary>Remove a sign-in method. 409 when it is the last one: the account would be unreachable.</summary>
+    [HttpDelete("logins/{provider}")]
+    public async Task<IActionResult> Unlink(string provider) =>
+        await accounts.UnlinkAsync(Uid, provider.ToLowerInvariant()) switch
+        {
+            UnlinkResult.Unlinked => NoContent(),
+            UnlinkResult.LastSignInMethod => Conflict(new { error = "This is your only way to sign in. Add another one first." }),
+            _ => NotFound(),
+        };
+
+    /// <summary>Disconnect GitHub: deletes the token. Synced projects stay, marked as source missing.</summary>
+    [HttpPost("github/disconnect")]
+    public async Task<IActionResult> DisconnectGithub() =>
+        await accounts.DisconnectGithubAsync(Uid) ? NoContent() : NotFound();
 
     [HttpGet("projects")]
     public async Task<IActionResult> Projects() =>

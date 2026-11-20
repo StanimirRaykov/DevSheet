@@ -41,11 +41,4 @@ public static class ReservedSlugs
     // reserved-slugs:end
 
     public static bool IsReserved(string slug) => Names.Contains(slug.Trim());
-
-    /// <summary>The first slug for a new account: the GitHub login, unless that is a reserved word.</summary>
-    public static string DefaultFor(string githubLogin, long githubId)
-    {
-        var slug = githubLogin.ToLowerInvariant();
-        return IsReserved(slug) ? $"{slug}-{githubId}" : slug;
-    }
 }

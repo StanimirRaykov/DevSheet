@@ -24,7 +24,8 @@ export interface DashboardProject {
 }
 
 export interface PublicPortfolio {
-  githubLogin: string;
+  displayName: string;
+  githubLogin: string | null; // null when the owner has not connected GitHub
   slug: string;
   projects: {
     title: string;
@@ -73,8 +74,10 @@ export function topLanguages(json: string, n = 3): string[] {
 /** The signed-in account, from GET /api/me. */
 export interface Me {
   id: string;
-  githubLogin: string;
+  displayName: string;
+  avatarUrl: string | null;
   slug: string;
   isPublished: boolean;
-  lastSyncedAt: string | null;
+  /** The GitHub account repos sync from; null when GitHub is not connected. */
+  github: { login: string; lastSyncedAt: string | null } | null;
 }
