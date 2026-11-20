@@ -16,7 +16,11 @@ public class MeController(AppDbContext db, IGitHubSyncService sync, ProjectSkill
     [HttpGet]
     public async Task<IActionResult> Get() =>
         Ok(await db.Users.Where(u => u.Id == Uid)
-            .Select(u => new { u.Id, u.GithubLogin, u.Slug, u.IsPublished, u.LastSyncedAt }).FirstAsync());
+            .Select(u => new
+            {
+                u.Id, u.DisplayName, u.AvatarUrl, u.Slug, u.IsPublished,
+                Github = u.GithubConnection == null ? null : new { u.GithubConnection.Login, u.GithubConnection.LastSyncedAt },
+            }).FirstAsync());
 
     [HttpPost("sync")]
     public async Task<IActionResult> Sync() => Ok(new { added = await sync.SyncAsync(Uid) });

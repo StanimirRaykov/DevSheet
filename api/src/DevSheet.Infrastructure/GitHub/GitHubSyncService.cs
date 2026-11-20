@@ -15,13 +15,14 @@ public class GitHubSyncService(
 
     public async Task<int> SyncAsync(Guid userId, CancellationToken ct = default)
     {
-        var user = await db.Users.Include(u => u.Repos).FirstAsync(u => u.Id == userId, ct);
-        if (user.EncryptedGithubToken is null) return 0;
+        var user = await db.Users.Include(u => u.Repos).Include(u => u.GithubConnection).FirstAsync(u => u.Id == userId, ct);
+        var github = user.GithubConnection;
+        if (github is null) return 0;
         var now = clock.GetUtcNow().UtcDateTime;
-        if (user.LastSyncedAt is { } last && now - last < MinInterval) return 0;
+        if (github.LastSyncedAt is { } last && now - last < MinInterval) return 0;
 
         var remote = await source.GetPublicReposAsync(
-            user.GithubLogin, tokens.Unprotect(user.EncryptedGithubToken), MaxRepos, ct);
+            github.Login, tokens.Unprotect(github.EncryptedToken), MaxRepos, ct);
 
         var aliasToSkillId = await db.SkillAliases.ToDictionaryAsync(a => a.Alias, a => a.SkillId, ct);
         var projectsByRepo = (await db.Projects.Include(p => p.Skills)
@@ -63,7 +64,7 @@ public class GitHubSyncService(
         foreach (var gone in user.Repos.Where(x => !seen.Contains(x.GithubRepoId)))
             gone.SourceMissing = true;
 
-        user.LastSyncedAt = now;
+        github.LastSyncedAt = now;
         await db.SaveChangesAsync(ct);
         return added;
     }

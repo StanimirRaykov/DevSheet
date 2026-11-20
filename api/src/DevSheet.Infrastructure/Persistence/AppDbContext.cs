@@ -6,6 +6,8 @@ namespace DevSheet.Infrastructure.Persistence;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+    public DbSet<GithubConnection> GithubConnections => Set<GithubConnection>();
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<GithubRepo> GithubRepos => Set<GithubRepo>();
     public DbSet<Project> Projects => Set<Project>();
@@ -21,8 +23,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         b.Entity<User>(e =>
         {
-            e.HasIndex(x => x.GithubId).IsUnique();
             e.HasIndex(x => x.Slug).IsUnique();
+            e.HasMany(x => x.Logins).WithOne(l => l.User).HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.GithubConnection).WithOne().HasForeignKey<GithubConnection>(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Profile).WithOne().HasForeignKey<Profile>(p => p.UserId);
             e.HasMany(x => x.Repos).WithOne().HasForeignKey(r => r.UserId);
             e.HasMany(x => x.Projects).WithOne().HasForeignKey(p => p.UserId);
@@ -30,6 +33,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasMany(x => x.Educations).WithOne().HasForeignKey(ed => ed.UserId);
             e.HasMany(x => x.Languages).WithOne().HasForeignKey(l => l.UserId);
             e.HasMany(x => x.Certifications).WithOne().HasForeignKey(c => c.UserId);
+        });
+        b.Entity<ExternalLogin>(e =>
+        {
+            e.Property(x => x.Provider).HasMaxLength(20);
+            e.HasIndex(x => new { x.Provider, x.ProviderKey }).IsUnique();
+        });
+        b.Entity<GithubConnection>(e =>
+        {
+            e.HasKey(x => x.UserId);
+            e.HasIndex(x => x.GithubId).IsUnique();
         });
         b.Entity<GithubRepo>().HasIndex(r => new { r.UserId, r.GithubRepoId }).IsUnique();
         b.Entity<ProjectSkill>().HasKey(ps => new { ps.ProjectId, ps.SkillId });

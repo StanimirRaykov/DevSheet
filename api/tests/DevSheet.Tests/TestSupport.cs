@@ -21,10 +21,10 @@ public sealed class TestDb : IDisposable
 
     public User AddUser(string login = "alice", bool published = false)
     {
-        var u = new User
+        var u = new User { DisplayName = login, Slug = login, IsPublished = published };
+        u.GithubConnection = new GithubConnection
         {
-            GithubId = Random.Shared.NextInt64(1, long.MaxValue), GithubLogin = login,
-            Slug = login, IsPublished = published, EncryptedGithubToken = "enc"
+            UserId = u.Id, GithubId = Random.Shared.NextInt64(1, long.MaxValue), Login = login, EncryptedToken = "enc"
         };
         Db.Users.Add(u);
         Db.SaveChanges();

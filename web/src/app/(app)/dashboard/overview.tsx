@@ -62,7 +62,7 @@ export function Overview() {
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <h1 className="text-2xl font-bold">Hi, {me.githubLogin}</h1>
+        <h1 className="text-2xl font-bold">Hi, {me.displayName}</h1>
         <div className="flex flex-wrap gap-2">
           <Link href="/dashboard/profile" className="rounded border px-4 py-2">Profile &amp; CV data</Link>
           {/* Plain link: the browser sends the login cookie and downloads the PDF the API returns. */}

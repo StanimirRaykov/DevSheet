@@ -16,6 +16,8 @@ capitalized, e.g. `SELECT * FROM "Users";`.
 
 ```mermaid
 erDiagram
+    Users ||--|{ ExternalLogins : "signs in with"
+    Users ||--o| GithubConnections : "syncs from"
     Users ||--o| Profiles : has
     Users ||--o{ GithubRepos : "synced from GitHub"
     Users ||--o{ Projects : owns
@@ -30,11 +32,28 @@ erDiagram
 
     Users {
         uuid Id PK
-        bigint GithubId UK "stable identity key"
-        text GithubLogin
+        text DisplayName
+        text Email "private, never used to match accounts"
+        text AvatarUrl
         text Slug UK "public URL"
         boolean IsPublished "opt-in"
-        text EncryptedGithubToken "Data Protection, never sent to browser"
+        timestamptz CreatedAt
+        timestamptz OnboardingCompletedAt
+    }
+    ExternalLogins {
+        uuid Id PK
+        uuid UserId FK
+        varchar Provider "github | google | apple"
+        text ProviderKey "provider's stable user id"
+        text Email
+        timestamptz CreatedAt
+    }
+    GithubConnections {
+        uuid UserId PK,FK
+        bigint GithubId UK "stable, logins can change"
+        text Login
+        text EncryptedToken "Data Protection, never sent to browser"
+        timestamptz ConnectedAt
         timestamptz LastSyncedAt
     }
     Profiles {
@@ -141,8 +160,13 @@ erDiagram
   omits email and location unless the owner opts in. Name, headline and summary are public once the page is published.
 - **Languages mirror Europass.** A foreign language is self-assessed in five skills, each an optional CEFR level stored as an
   integer (1 = A1 ... 6 = C2); a native language has no levels. See `docs/EUROPASS.md`.
-- **Identity.** Users are keyed by GitHub's numeric id (`GithubId`), not the login, which can change.
-  `Slug` is a separate, unique, public value.
+- **Accounts.** A user is a DevSheet account on its own. Each way to sign in is an `ExternalLogins` row, unique by
+  (`Provider`, `ProviderKey`); the key is the provider's stable user id, never the email. Accounts are **never matched
+  by email**: a Google sign-in with the same email as a GitHub account makes a separate account (linking a second
+  provider happens only while signed in). Signing in with GitHub creates both a login and a `GithubConnections` row.
+- **GitHub is a connection.** `GithubConnections` (0 or 1 per user) holds the GitHub account repos are synced from and
+  its encrypted token, keyed by GitHub's numeric id (logins can change). One GitHub account feeds at most one DevSheet
+  account. `Slug` is a separate, unique, public value (3-30 lowercase letters, digits, hyphens; not a reserved route).
 - **Deletes.** Deleting a user cascades to everything they own. `Projects.GithubRepoId` has no cascade:
   a repo row cannot be deleted while a project references it (repos that vanish from GitHub are flagged
   `SourceMissing`, not deleted).

@@ -14,7 +14,7 @@ public class PublicController(AppDbContext db) : ControllerBase
     [HttpGet("{slug}")]
     public async Task<IActionResult> Get(string slug)
     {
-        var u = await db.Users.FirstOrDefaultAsync(x => x.Slug == slug.ToLowerInvariant() && x.IsPublished);
+        var u = await db.Users.Include(x => x.GithubConnection).FirstOrDefaultAsync(x => x.Slug == slug.ToLowerInvariant() && x.IsPublished);
         if (u is null) return NotFound();
 
         var projects = await db.Projects
@@ -47,6 +47,6 @@ public class PublicController(AppDbContext db) : ControllerBase
         var education = await db.Educations.Where(e => e.UserId == u.Id).NewestFirst()
             .Select(e => new { e.Institution, e.Degree, e.StartDate, e.EndDate }).ToListAsync();
 
-        return Ok(new { u.GithubLogin, u.Slug, Profile = profile, Projects = projects, Skills = matrix, Experience = experience, Education = education });
+        return Ok(new { u.DisplayName, GithubLogin = u.GithubConnection?.Login, u.Slug, Profile = profile, Projects = projects, Skills = matrix, Experience = experience, Education = education });
     }
 }

@@ -1,17 +1,24 @@
 namespace DevSheet.Domain.Entities;
 
+/// <summary>
+/// A DevSheet account. It exists on its own: people sign in through one or more <see cref="ExternalLogin"/>s
+/// (GitHub, Google, Apple), and GitHub repositories come from an optional <see cref="GithubConnection"/>.
+/// </summary>
 public class User
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    /// <summary>GitHub numeric id: the stable identity key (logins can be renamed).</summary>
-    public long GithubId { get; set; }
-    public string GithubLogin { get; set; } = "";
-    /// <summary>Public URL slug (/slug). Defaults to the GitHub login.</summary>
+    public string DisplayName { get; set; } = "";
+    /// <summary>From the provider at sign-up. Private: never shown publicly and never used to match accounts.</summary>
+    public string? Email { get; set; }
+    public string? AvatarUrl { get; set; }
+    /// <summary>Public URL slug (/slug). Chosen once at sign-up, see <see cref="SlugRules"/>.</summary>
     public string Slug { get; set; } = "";
     public bool IsPublished { get; set; }
-    public string? EncryptedGithubToken { get; set; }
-    public DateTime? LastSyncedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? OnboardingCompletedAt { get; set; }
 
+    public List<ExternalLogin> Logins { get; set; } = new();
+    public GithubConnection? GithubConnection { get; set; }
     public Profile? Profile { get; set; }
     public List<GithubRepo> Repos { get; set; } = new();
     public List<Project> Projects { get; set; } = new();

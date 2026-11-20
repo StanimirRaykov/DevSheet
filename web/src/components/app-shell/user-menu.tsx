@@ -36,23 +36,23 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
       trigger={
         <button
           type="button"
-          aria-label={`Account menu for ${me.githubLogin}`}
+          aria-label={`Account menu for ${me.displayName}`}
           className={cn(
             "flex items-center gap-2.5 rounded-control text-left transition-colors duration-150 hover:bg-sheet/60",
             compact ? "p-1" : "w-full p-2",
           )}
         >
-          <Avatar name={me.githubLogin} size={compact ? 30 : 32} />
+          <Avatar name={me.displayName} src={me.avatarUrl} size={compact ? 30 : 32} />
           {!compact && (
             <>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{me.githubLogin}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{me.displayName}</span>
               <ChevronsUpDown aria-hidden size={15} className="text-graphite" />
             </>
           )}
         </button>
       }
     >
-      <MenuLabel>Signed in as {me.githubLogin}</MenuLabel>
+      <MenuLabel>Signed in as {me.displayName}</MenuLabel>
       {me.isPublished && (
         <MenuItem icon={<ExternalLink size={15} />} onSelect={() => window.open(`/${me.slug}`, "_blank", "noopener")}>
           View public page
