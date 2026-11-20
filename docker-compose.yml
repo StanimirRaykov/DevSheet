@@ -1,11 +1,72 @@
+# Full stack:        docker compose up --build        (web http://localhost:3000, API http://localhost:5217)
+# Database only:     docker compose up -d db           (daily development: API and web run on the host)
+# Secrets and settings come from a git-ignored .env next to this file (copy .env.example).
+
+x-api-image: &api-image
+  build: ./api
+  image: devsheet-api
+
+x-database: &database
+  ConnectionStrings__Default: Host=db;Port=5432;Database=devsheet;Username=devsheet;Password=${POSTGRES_PASSWORD:-devsheet}
+
 services:
   db:
     image: postgres:16
     environment:
       POSTGRES_USER: devsheet
-      POSTGRES_PASSWORD: devsheet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devsheet}
       POSTGRES_DB: devsheet
     ports: ["5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devsheet -d devsheet"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # One-shot database step: applies EF Core migrations and seeds the skill catalogue, then exits.
+  # The API server itself never migrates outside Development.
+  migrate:
+    <<: *api-image
+    command: ["--migrate"]
+    environment:
+      <<: *database
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    <<: *api-image
+    ports: ["5217:8080"]
+    environment:
+      <<: *database
+      WebOrigin: http://localhost:3000
+      Authentication__GitHub__ClientId: ${GITHUB_CLIENT_ID:-}
+      Authentication__GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET:-}
+    # Data Protection keys (login cookie, stored GitHub tokens). Kept in a volume so restarts don't log anyone out.
+    volumes: [dpkeys:/keys]
+    depends_on:
+      db: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+    # Health check (GET /health) is defined in api/Dockerfile.
+
+  web:
+    build:
+      context: ./web
+      args:
+        # Used by the browser, so it is the host address, baked in at build time.
+        NEXT_PUBLIC_API_URL: http://localhost:5217
+    image: devsheet-web
+    ports: ["3000:3000"]
+    environment:
+      # Used by server-side rendering inside the Docker network.
+      API_URL: http://api:8080
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  dpkeys:
