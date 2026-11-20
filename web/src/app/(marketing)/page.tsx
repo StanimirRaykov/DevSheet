@@ -58,7 +58,7 @@ const FAQ = [
   },
   {
     q: "What is public?",
-    a: "Nothing, until you publish your page. After that, only the projects you approved and the skills you confirmed, plus the profile text you wrote. Email and location are hidden unless you turn them on.",
+    a: "Nothing, until you publish your page. After that: your name, headline and summary, your work history and education, the projects you approved and the skills you confirmed. Email and location are hidden unless you turn them on.",
   },
   {
     q: "How do I delete my account?",
