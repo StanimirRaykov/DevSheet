@@ -5,6 +5,7 @@ using DevSheet.Domain.Entities;
 using DevSheet.Application.Abstractions;
 using DevSheet.Infrastructure;
 using DevSheet.Infrastructure.Persistence;
+using DevSheet.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,8 +15,10 @@ var webOrigin = builder.Configuration["WebOrigin"]!;
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDataProtection();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddDevSheetDataProtection(builder.Configuration);
+// GET /health: 200 when the API can reach its database, 503 otherwise (used by the Docker health check).
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.WithOrigins(webOrigin).AllowCredentials().AllowAnyHeader().AllowAnyMethod()));
@@ -87,6 +90,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 app.Run();
 
 static async Task MigrateDatabaseAsync(WebApplication app)
