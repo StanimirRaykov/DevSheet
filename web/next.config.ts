@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // A self-contained server (.next/standalone) for the Docker image. `next dev` is not affected.
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
