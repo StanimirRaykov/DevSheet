@@ -44,6 +44,8 @@ services:
       WebOrigin: http://localhost:3000
       Authentication__GitHub__ClientId: ${GITHUB_CLIENT_ID:-}
       Authentication__GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET:-}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
     # Data Protection keys (login cookie, stored GitHub tokens). Kept in a volume so restarts don't log anyone out.
     volumes: [dpkeys:/keys]
     depends_on:

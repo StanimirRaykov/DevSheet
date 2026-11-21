@@ -15,7 +15,7 @@ API layers: `Domain` (entities) ← `Application` (interfaces) ← `Infrastructu
 encryption) ← `Api` (controllers, auth).
 
 Key design decisions
-- **Accounts stand on their own.** A DevSheet account can have several sign-in methods (GitHub now; Google and Apple
+- **Accounts stand on their own.** A DevSheet account can have several sign-in methods (GitHub and Google; Apple
   planned) and, separately, one connected GitHub account that repositories sync from. Accounts are never matched by
   email; a second sign-in method is added only while signed in (`GET /auth/link/{provider}`), and the last one cannot
   be removed. Disconnecting GitHub deletes its token and keeps the synced projects.
@@ -34,14 +34,22 @@ Prerequisites: .NET 8 SDK, Node 20+, PostgreSQL (Docker or local).
 2. Register a GitHub OAuth app (Settings → Developer settings → OAuth Apps):
    - Homepage URL: `http://localhost:3000`
    - Callback URL: `http://localhost:5217/signin-github`
-3. API secrets (never commit these):
+3. Optional, for "Continue with Google": in the Google Cloud console create an OAuth client
+   (APIs & Services > Credentials > Create credentials > OAuth client ID, type "Web application"):
+   - Authorised redirect URI: `http://localhost:5217/signin-google`
+   - OAuth consent screen: "Testing", with your own Google account as a test user; scopes `openid`, `email`,
+     `profile` only.
+4. API secrets (never commit these):
    ```bash
    cd api/src/DevSheet.Api
    dotnet user-secrets set "Authentication:GitHub:ClientId" "<id>"
    dotnet user-secrets set "Authentication:GitHub:ClientSecret" "<secret>"
+   dotnet user-secrets set "Authentication:Google:ClientId" "<id>"         # optional
+   dotnet user-secrets set "Authentication:Google:ClientSecret" "<secret>" # optional
    dotnet run        # http://localhost:5217 (Swagger at /swagger)
    ```
-4. Web:
+   A provider without both values is left out of `GET /auth/providers`, so the login page only shows buttons that work.
+5. Web:
    ```bash
    cd web && npm install && npm run dev   # http://localhost:3000
    ```
@@ -53,7 +61,7 @@ In Development the API applies EF Core migrations on start, so the database is a
 The whole platform (database, API, web) with only Docker installed:
 
 ```bash
-cp .env.example .env      # fill in GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET (same OAuth app as above)
+cp .env.example .env      # fill in the GitHub (and optionally Google) client id and secret, same apps as above
 docker compose up --build # web http://localhost:3000, API http://localhost:5217
 ```
 

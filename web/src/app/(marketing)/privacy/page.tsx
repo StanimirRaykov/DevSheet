@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       <h2>What is stored</h2>
       <h3>Your account</h3>
       <ul>
-        <li>Your display name, profile picture address and email, as the sign-in provider (GitHub) gives them.</li>
+        <li>Your display name, profile picture address and email, as the sign-in provider you use (GitHub or Google) gives them.</li>
         <li>Which sign-in methods you use, stored as the provider&apos;s id for your account, not your password. DevSheet never sees a password.</li>
         <li>The address of your public page (for example /ana-petrova) and whether it is published.</li>
       </ul>
@@ -28,6 +28,13 @@ export default function PrivacyPage() {
         <li>
           An access token, so DevSheet can sync your repositories when you ask it to. It is encrypted before it is stored
           and is never sent to your browser. It allows reading your public profile only (the read:user permission).
+        </li>
+      </ul>
+      <h3>From Google, if you sign in with it</h3>
+      <ul>
+        <li>
+          Your Google account id, name, email and profile picture address. DevSheet asks Google for your basic profile and
+          email only, and does not keep an access token: it cannot read your mail, files or contacts.
         </li>
       </ul>
       <h3>What you enter</h3>
@@ -61,8 +68,8 @@ export default function PrivacyPage() {
 
       <h2>Who else receives data</h2>
       <p>
-        GitHub, when you sign in and when you sync, because that is where the data comes from. DevSheet does not sell or
-        share your data with anyone else.
+        GitHub and Google, when you sign in with them, and GitHub when you sync, because that is where the data comes
+        from. DevSheet does not sell or share your data with anyone else.
       </p>
 
       <h2>How long it is kept</h2>
@@ -76,7 +83,8 @@ export default function PrivacyPage() {
       <p>
         A delete button is coming to the Settings page. It removes your account and all its data in one step. Until it is
         there, open an issue in the <a href={REPO_URL}>project&apos;s repository</a> and the account will be deleted by hand.
-        You can also revoke DevSheet&apos;s access on GitHub at any time, under Settings, Applications.
+        You can also revoke DevSheet&apos;s access at any time: on GitHub under Settings, Applications, and in your Google
+        Account under Security, third-party connections.
       </p>
 
       <h2>Contact</h2>
