@@ -24,8 +24,9 @@ describe("site links", () => {
     expect(FOOTER_LINKS.filter((l) => !l.href.startsWith("/")).map((l) => l.href)).toEqual([REPO_URL]);
   });
 
-  it("the example page is a public slug, not a route of the app", () => {
-    expect(isReservedSlug(DEMO_SLUG)).toBe(false);
+  it("the example page's address is reserved, so no real account can take it", () => {
+    expect(isReservedSlug(DEMO_SLUG)).toBe(true);
+    expect(routeExists("/" + DEMO_SLUG)).toBe(false); // served by the public [slug] page, not a route of its own
   });
 
   it("the check itself notices a missing page", () => {

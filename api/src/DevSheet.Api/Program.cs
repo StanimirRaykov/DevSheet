@@ -94,7 +94,7 @@ static async Task MigrateDatabaseAsync(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await DatabaseMigrator.MigrateAsync(db, app.Logger);
+    await DatabaseMigrator.MigrateAsync(db, app.Logger, seedDemo: app.Configuration.GetValue("Demo:Seed", true));
 }
 
 // Needed so integration tests can start the app with WebApplicationFactory<Program>.

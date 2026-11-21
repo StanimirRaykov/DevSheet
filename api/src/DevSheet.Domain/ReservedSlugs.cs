@@ -19,6 +19,7 @@ public static class ReservedSlugs
         "contact",
         "cv",
         "dashboard",
+        "demo",
         "dev",
         "docs",
         "help",

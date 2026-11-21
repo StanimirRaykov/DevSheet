@@ -6,7 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace DevSheet.Infrastructure.Persistence;
 
 /// <summary>
-/// Brings the database up to date: applies pending EF Core migrations, then seeds the skill catalogue.
+/// Brings the database up to date: applies pending EF Core migrations, then seeds the skill catalogue
+/// and (unless <c>Demo:Seed</c> is false) the public example page.
 /// Development runs this at startup; production runs it as an explicit step (`DevSheet.Api --migrate`).
 /// </summary>
 public static class DatabaseMigrator
@@ -14,11 +15,12 @@ public static class DatabaseMigrator
     /// <summary>The first migration. Its tables are exactly what EnsureCreated() made before issue #13.</summary>
     public const string InitialMigrationId = "20261119140115_InitialCreate";
 
-    public static async Task MigrateAsync(AppDbContext db, ILogger logger, CancellationToken ct = default)
+    public static async Task MigrateAsync(AppDbContext db, ILogger logger, bool seedDemo = true, CancellationToken ct = default)
     {
         await BaselineEnsureCreatedDatabaseAsync(db, logger, ct);
         await db.Database.MigrateAsync(ct);
         await SkillSeeder.SeedAsync(db, ct);
+        if (seedDemo) await DemoSeeder.SeedAsync(db, ct);
     }
 
     /// <summary>
