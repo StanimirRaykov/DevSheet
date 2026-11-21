@@ -63,6 +63,8 @@ services:
     environment:
       # Used by server-side rendering inside the Docker network.
       API_URL: http://api:8080
+      # Public address of the site, for robots.txt and the sitemap.
+      SITE_URL: http://localhost:3000
     depends_on:
       api: { condition: service_healthy }
     restart: unless-stopped
