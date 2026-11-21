@@ -33,19 +33,19 @@ async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
     <>
       <header className="space-y-1">
         <h1 className="text-3xl font-bold">{data.profile?.fullName || data.displayName}</h1>
-        {data.profile?.headline && <p className="text-lg text-neutral-700">{data.profile.headline}</p>}
-        <p className="text-sm text-neutral-500">
+        {data.profile?.headline && <p className="text-lg text-graphite">{data.profile.headline}</p>}
+        <p className="text-sm text-graphite">
           {[data.profile?.location, data.profile?.email].filter(Boolean).join(" · ")}
         </p>
-        {data.profile?.summary && <p className="whitespace-pre-line pt-2 text-neutral-800">{data.profile.summary}</p>}
+        {data.profile?.summary && <p className="whitespace-pre-line pt-2 text-ink">{data.profile.summary}</p>}
       </header>
       {data.skills.length > 0 && (
         <section aria-labelledby="skills-heading" className="space-y-2">
           <h2 id="skills-heading" className="text-xl font-semibold">Skills</h2>
           <ul className="flex flex-wrap gap-2">
             {data.skills.map((s) => (
-              <li key={s.name} title={s.projects.join(", ")} className="rounded-full bg-neutral-100 px-3 py-1 text-sm">
-                {s.name} <span className="text-neutral-500">· {projectsLabel(s.projects.length)}</span>
+              <li key={s.name} title={s.projects.join(", ")} className="rounded-full border border-rule bg-sheet px-3 py-1 text-sm">
+                {s.name} <span className="text-graphite">· {projectsLabel(s.projects.length)}</span>
               </li>
             ))}
           </ul>
@@ -58,8 +58,8 @@ async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
             {data.experience.map((x) => (
               <li key={`${x.company}-${x.startDate}`}>
                 <p className="font-semibold">{x.title} · {x.company}</p>
-                <p className="text-xs text-neutral-500">{formatRange(x.startDate, x.endDate)}</p>
-                {x.description && <p className="whitespace-pre-line text-sm text-neutral-700">{x.description}</p>}
+                <p className="text-xs text-graphite">{formatRange(x.startDate, x.endDate)}</p>
+                {x.description && <p className="whitespace-pre-line text-sm text-graphite">{x.description}</p>}
               </li>
             ))}
           </ul>
@@ -72,7 +72,7 @@ async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
             {data.education.map((x) => (
               <li key={`${x.institution}-${x.startDate}`}>
                 <p className="font-semibold">{x.institution}{x.degree && ` · ${x.degree}`}</p>
-                <p className="text-xs text-neutral-500">{formatRange(x.startDate, x.endDate)}</p>
+                <p className="text-xs text-graphite">{formatRange(x.startDate, x.endDate)}</p>
               </li>
             ))}
           </ul>
@@ -81,10 +81,10 @@ async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
       <h2 className="text-xl font-semibold">Projects</h2>
       <ul className="grid gap-4 sm:grid-cols-2">
         {data.projects.map((p) => (
-          <li key={p.url} className="rounded-lg border p-4">
+          <li key={p.url} className="rounded-panel border border-rule bg-sheet p-4">
             <a href={p.url} className="font-semibold underline">{p.title}</a>
-            <p className="text-sm text-neutral-600">{p.description}</p>
-            <p className="mt-2 text-xs text-neutral-500">{topLanguages(p.languagesJson).join(" · ")} · ★ {p.stars}</p>
+            <p className="text-sm text-graphite">{p.description}</p>
+            <p className="mt-2 text-xs text-graphite">{topLanguages(p.languagesJson).join(" · ")} · ★ {p.stars}</p>
             {p.skills.length > 0 && (
               <ul className="mt-2 flex flex-wrap gap-1">
                 {p.skills.map((name) => (
@@ -102,7 +102,7 @@ async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
 export default function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
   return (
     <main className="mx-auto max-w-3xl space-y-6 p-8">
-      <Suspense fallback={<p className="text-neutral-500">Loading…</p>}>
+      <Suspense fallback={<p className="text-graphite">Loading…</p>}>
         <Portfolio params={params} />
       </Suspense>
     </main>

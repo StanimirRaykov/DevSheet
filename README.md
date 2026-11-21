@@ -78,6 +78,8 @@ Production never migrates on start. Apply migrations as a separate step before s
 ```bash
 dotnet DevSheet.Api.dll --migrate                       # applies migrations, seeds skills, exits
 ```
+The same step creates the public example page `/demo` (a fictional developer the landing page links to) if it is
+missing. Set `Demo:Seed=false` to skip it. `demo` is a reserved slug, so no real account can take the address.
 A test and a CI step fail when the model changes without a migration.
 
 ## Tests and CI
