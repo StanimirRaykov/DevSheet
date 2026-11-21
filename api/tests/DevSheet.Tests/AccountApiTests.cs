@@ -145,7 +145,6 @@ public class AccountApiTests(WebApplicationFactory<Program> factory) : IClassFix
 
     [Theory]
     [InlineData("/auth/myspace")]
-    [InlineData("/auth/google")] // not registered until #30
     public async Task Unknown_provider_is_404(string url) =>
         Assert.Equal(HttpStatusCode.NotFound, (await _api.Client().GetAsync(url)).StatusCode);
 

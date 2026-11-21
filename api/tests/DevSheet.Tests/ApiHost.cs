@@ -17,18 +17,23 @@ namespace DevSheet.Tests;
 
 /// <summary>
 /// The real API on an in-memory SQLite database. Requests are signed in as the user id in the
-/// <see cref="TestAuthHandler.Header"/> header (no header: anonymous); OAuth schemes stay registered.
+/// <see cref="TestAuthHandler.Header"/> header (no header: anonymous); OAuth schemes stay registered, with
+/// made-up credentials so they count as set up (pass <c>withGoogle: false</c> for a server without Google).
 /// </summary>
 public sealed class ApiHost : IDisposable
 {
     private readonly SqliteConnection _conn = new("DataSource=:memory:");
     public WebApplicationFactory<Program> Factory { get; }
 
-    public ApiHost(WebApplicationFactory<Program> factory)
+    public ApiHost(WebApplicationFactory<Program> factory, bool withGoogle = true)
     {
         _conn.Open();
         Factory = factory.WithWebHostBuilder(b => b
             .UseEnvironment("Testing")
+            .UseSetting("Authentication:GitHub:ClientId", "test-github-id")
+            .UseSetting("Authentication:GitHub:ClientSecret", "test-github-secret")
+            .UseSetting("Authentication:Google:ClientId", withGoogle ? "test-google-id" : "\u2028") // whitespace only: not set up
+            .UseSetting("Authentication:Google:ClientSecret", withGoogle ? "test-google-secret" : "")
             .ConfigureTestServices(s =>
             {
                 s.RemoveAll<DbContextOptions<AppDbContext>>();

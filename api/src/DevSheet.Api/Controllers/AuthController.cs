@@ -15,7 +15,11 @@ public class AuthController(IConfiguration config, IAuthenticationSchemeProvider
     private const string SettingsPath = "/settings";
     private string WebOrigin => config["WebOrigin"]!;
 
-    /// <summary>Sign in, or sign up, with a provider (github; google and apple later).</summary>
+    /// <summary>The sign-in providers that are set up on this server, in display order (for the login page).</summary>
+    [HttpGet("providers")]
+    public IActionResult Providers() => Ok(new { providers = ExternalAuth.EnabledProviders(config) });
+
+    /// <summary>Sign in, or sign up, with a provider (github or google; apple later).</summary>
     [HttpGet("{provider}")]
     public Task<IActionResult> SignIn(string provider, [FromQuery] string? next = null) =>
         StartAsync(provider, AuthIntent.SignIn, LocalPath.OrFallback(next));
@@ -47,7 +51,10 @@ public class AuthController(IConfiguration config, IAuthenticationSchemeProvider
 
     private async Task<IActionResult> StartAsync(string provider, AuthIntent intent, string path)
     {
-        if (!ExternalAuth.Schemes.TryGetValue(provider.ToLowerInvariant(), out var scheme) || await schemes.GetSchemeAsync(scheme) is null)
+        // A provider without credentials would only show the provider's own error page, so treat it as unknown.
+        if (!ExternalAuth.Schemes.TryGetValue(provider.ToLowerInvariant(), out var scheme)
+            || await schemes.GetSchemeAsync(scheme) is null
+            || !ExternalAuth.IsConfigured(config, scheme))
             return NotFound(new { error = $"Unknown sign-in provider '{provider}'." });
         return Challenge(ExternalAuth.Properties(WebOrigin + path, intent), scheme);
     }

@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 var webOrigin = builder.Configuration["WebOrigin"]!;
 const string AvatarClaim = "urn:github:avatar";
+const string GooglePictureClaim = "urn:google:picture";
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -43,27 +44,57 @@ builder.Services
     })
     .AddGitHub(o =>
     {
-        // Falls back to a placeholder so the app boots before you register the OAuth app.
-        o.ClientId = builder.Configuration["Authentication:GitHub:ClientId"] is { Length: > 0 } id ? id : "unset";
-        o.ClientSecret = builder.Configuration["Authentication:GitHub:ClientSecret"] is { Length: > 0 } s ? s : "unset";
+        o.ClientId = Credential("GitHub", "ClientId");
+        o.ClientSecret = Credential("GitHub", "ClientSecret");
+        o.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         o.Scope.Add("read:user"); // public data only; no private-repo access
         o.SaveTokens = false;     // we store the token ourselves, encrypted
         o.ClaimActions.MapJsonKey(AvatarClaim, "avatar_url");
         o.Events.OnCreatingTicket = ctx =>
         {
-            var githubId = long.Parse(ctx.Principal!.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            var login = ctx.Principal.FindFirstValue(ClaimTypes.Name) ?? $"user{githubId}";
-            var name = ctx.Principal.FindFirstValue(GitHubAuthenticationConstants.Claims.Name);
+            var github = ctx.Principal!;
+            var githubId = long.Parse(github.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var login = github.FindFirstValue(ClaimTypes.Name) ?? $"user{githubId}";
+            var name = github.FindFirstValue(GitHubAuthenticationConstants.Claims.Name);
             return ExternalAuth.CompleteAsync(ctx,
                 new ExternalIdentity(LoginProviders.GitHub, githubId.ToString(),
                     DisplayName: string.IsNullOrWhiteSpace(name) ? login : name,
-                    Email: ctx.Principal.FindFirstValue(ClaimTypes.Email),
-                    AvatarUrl: ctx.Principal.FindFirstValue(AvatarClaim)),
+                    Email: github.FindFirstValue(ClaimTypes.Email),
+                    AvatarUrl: github.FindFirstValue(AvatarClaim)),
                 new GithubGrant(githubId, login, ctx.AccessToken!));
+        };
+        o.Events.OnRemoteFailure = ctx => ExternalAuth.OnRemoteFailure(ctx, webOrigin);
+    })
+    .AddGoogle(o =>
+    {
+        o.ClientId = Credential("Google", "ClientId");
+        o.ClientSecret = Credential("Google", "ClientSecret");
+        o.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        // The default scopes (openid, profile, email) are all we ask for.
+        o.SaveTokens = false;
+        o.ClaimActions.MapJsonKey(GooglePictureClaim, "picture");
+        o.Events.OnCreatingTicket = ctx =>
+        {
+            var google = ctx.Principal!;
+            var email = google.FindFirstValue(ClaimTypes.Email);
+            var name = google.FindFirstValue(ClaimTypes.Name);
+            return ExternalAuth.CompleteAsync(ctx,
+                new ExternalIdentity(LoginProviders.Google, google.FindFirstValue(ClaimTypes.NameIdentifier)!,
+                    DisplayName: !string.IsNullOrWhiteSpace(name) ? name : email?.Split('@')[0] ?? "developer",
+                    Email: email,
+                    AvatarUrl: google.FindFirstValue(GooglePictureClaim)),
+                github: null);
         };
         o.Events.OnRemoteFailure = ctx => ExternalAuth.OnRemoteFailure(ctx, webOrigin);
     });
 builder.Services.AddAuthorization();
+
+// OAuth credentials fall back to a placeholder so the API boots before a provider is registered.
+// GET /auth/providers leaves such a provider out, so the login page never shows a button that cannot work.
+// Trimmed: copying from a provider's console can bring invisible characters along (a trailing U+2028 made
+// Google answer "OAuth client was not found").
+string Credential(string provider, string key) =>
+    builder.Configuration[$"Authentication:{provider}:{key}"]?.Trim() is { Length: > 0 } value ? value : "unset";
 
 var app = builder.Build();
 

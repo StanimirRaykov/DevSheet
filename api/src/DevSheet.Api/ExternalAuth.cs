@@ -15,11 +15,23 @@ public static class ExternalAuth
     public const string UserIdClaim = "devsheet:uid";
     private const string IntentKey = "devsheet:intent";
 
-    /// <summary>Our provider names (as in URLs and the database) and their ASP.NET scheme names.</summary>
+    /// <summary>
+    /// Our provider names (as in URLs and the database) and their ASP.NET scheme names, in the order the login
+    /// page shows them. The scheme name is also the configuration section: Authentication:{scheme}:ClientId.
+    /// </summary>
     public static readonly IReadOnlyDictionary<string, string> Schemes = new Dictionary<string, string>
     {
         [DevSheet.Domain.Entities.LoginProviders.GitHub] = "GitHub",
+        [DevSheet.Domain.Entities.LoginProviders.Google] = "Google",
     };
+
+    /// <summary>Providers whose client id and secret are both set, so signing in with them can work.</summary>
+    public static IReadOnlyList<string> EnabledProviders(IConfiguration config) =>
+        Schemes.Where(p => IsConfigured(config, p.Value)).Select(p => p.Key).ToList();
+
+    public static bool IsConfigured(IConfiguration config, string scheme) =>
+        !string.IsNullOrWhiteSpace(config[$"Authentication:{scheme}:ClientId"]) &&
+        !string.IsNullOrWhiteSpace(config[$"Authentication:{scheme}:ClientSecret"]);
 
     public static AuthenticationProperties Properties(string redirectUri, AuthIntent intent) =>
         new(new Dictionary<string, string?> { [IntentKey] = intent.ToString() }) { RedirectUri = redirectUri };
