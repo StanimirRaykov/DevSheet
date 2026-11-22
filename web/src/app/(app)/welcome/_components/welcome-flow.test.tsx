@@ -134,7 +134,8 @@ describe("WelcomeFlow", () => {
     api(view({ step: "Review", githubLogin: "ana-gh" }), (path) => (path === "/api/me/projects" ? ok([]) : undefined));
     renderFlow();
     expect(await screen.findByText(/Nothing is public until you publish your page/)).toBeVisible();
-    expect(screen.getByText("Nothing waiting for review")).toBeVisible();
+    // The list loads after the step's text, so wait for it.
+    expect(await screen.findByText("Nothing waiting for review")).toBeVisible();
   });
 
   it("can be skipped from any step", async () => {
