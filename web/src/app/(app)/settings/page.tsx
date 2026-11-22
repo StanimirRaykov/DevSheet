@@ -4,6 +4,7 @@ import { EmptyState, Skeleton } from "@/components/ui";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { AccountTab } from "./_components/account-tab";
 import { parseSettingsTab } from "./_components/settings-tab-names";
+import { SignInTab } from "./_components/sign-in-tab";
 import { SettingsTabs } from "./_components/settings-tabs";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -25,7 +26,7 @@ async function Settings({ searchParams }: { searchParams: SettingsSearchParams }
         initialTab={parseSettingsTab(params.tab)}
         panels={{
           account: <AccountTab />,
-          "sign-in": later("Sign-in methods and the GitHub connection."),
+          "sign-in": <SignInTab />,
           "public-page": later("Your address, publishing and what the page shows."),
           delete: later("Deleting your account."),
         }}
