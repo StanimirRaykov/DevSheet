@@ -15,7 +15,10 @@ public class User
     public string Slug { get; set; } = "";
     public bool IsPublished { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>Set when the welcome flow is finished or skipped. Until then, signing in opens /welcome.</summary>
     public DateTime? OnboardingCompletedAt { get; set; }
+    /// <summary>The welcome step the user last reached, so leaving halfway resumes there.</summary>
+    public OnboardingStep OnboardingStep { get; set; }
 
     public List<ExternalLogin> Logins { get; set; } = new();
     public GithubConnection? GithubConnection { get; set; }
