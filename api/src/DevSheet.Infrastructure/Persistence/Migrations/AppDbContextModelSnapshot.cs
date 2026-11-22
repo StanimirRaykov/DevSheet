@@ -243,6 +243,9 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("AllowPublicCvDownload")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
@@ -271,6 +274,10 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Website")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

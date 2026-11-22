@@ -1,6 +1,9 @@
 namespace DevSheet.Application.Skills;
 
-public record MatrixEntry(string Name, IReadOnlyList<string> Projects);
+public record MatrixEntry(string Name, IReadOnlyList<string> Projects)
+{
+    public string Category => SkillCatalog.CategoryOf(Name);
+}
 
 /// <summary>The "matrix": for each skill, the projects it was used in. Pure logic.</summary>
 public static class SkillMatrix

@@ -1,6 +1,7 @@
 using DevSheet.Api.Controllers;
 using DevSheet.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+using DevSheet.Infrastructure.Cv;
 
 namespace DevSheet.Tests;
 
@@ -21,7 +22,7 @@ public class PublicControllerTests
         var u = t.AddUser("bob", published: false);
         AddProject(t, u, "secret", ProjectStatus.Visible);
 
-        var result = await new PublicController(t.Db).Get("bob");
+        var result = await new PublicController(t.Db, new CvDataService(t.Db)).Get("bob");
 
         Assert.IsType<NotFoundResult>(result);
     }
@@ -35,7 +36,7 @@ public class PublicControllerTests
         AddProject(t, u, "pending", ProjectStatus.Pending);
         AddProject(t, u, "hidden", ProjectStatus.Hidden);
 
-        var result = await new PublicController(t.Db).Get("carol");
+        var result = await new PublicController(t.Db, new CvDataService(t.Db)).Get("carol");
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
@@ -50,7 +51,7 @@ public class PublicControllerTests
         using var t = new TestDb();
         t.AddUser("dave", published: true);
 
-        var result = await new PublicController(t.Db).Get("DAVE");
+        var result = await new PublicController(t.Db, new CvDataService(t.Db)).Get("DAVE");
 
         Assert.IsType<OkObjectResult>(result);
     }

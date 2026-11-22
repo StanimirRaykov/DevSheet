@@ -13,7 +13,11 @@ public class CvDataService(AppDbContext db)
     /// <summary>A CV is a summary, not a repo dump.</summary>
     public const int MaxProjects = 8;
 
-    public async Task<CvModel?> BuildAsync(Guid userId, CancellationToken ct = default)
+    /// <param name="forVisitor">
+    /// Built for someone other than the owner (the public download): email and location only when the owner shows
+    /// them on the public page.
+    /// </param>
+    public async Task<CvModel?> BuildAsync(Guid userId, bool forVisitor = false, CancellationToken ct = default)
     {
         var user = await db.Users.Include(u => u.GithubConnection).FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null) return null;
@@ -45,7 +49,8 @@ public class CvDataService(AppDbContext db)
         var name = string.IsNullOrWhiteSpace(profile?.FullName) ? user.DisplayName : profile!.FullName;
         return new CvModel(
             name, profile?.Headline ?? "", profile?.Summary ?? "",
-            profile?.Email ?? "", profile?.Location ?? "",
+            forVisitor && profile?.ShowEmailPublicly != true ? "" : profile?.Email ?? "",
+            forVisitor && profile?.ShowLocationPublicly != true ? "" : profile?.Location ?? "",
             user.GithubConnection is { } gh ? $"github.com/{gh.Login}" : "",
             skills,
             experience.Select(w => new CvExperience(w.Title, w.Company, w.StartDate, w.EndDate, w.Description)).ToList(),

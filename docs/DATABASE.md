@@ -67,6 +67,8 @@ erDiagram
         text Email
         boolean ShowEmailPublicly "opt-in, default false"
         boolean ShowLocationPublicly "opt-in, default false"
+        text Website "shown on the public page"
+        boolean AllowPublicCvDownload "opt-in, default false"
     }
     GithubRepos {
         uuid Id PK
