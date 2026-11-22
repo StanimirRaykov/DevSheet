@@ -11,7 +11,7 @@ export interface TabItem {
   content: ReactNode;
 }
 
-/** Underlined tabs. Arrow keys move between tabs (Radix roving focus). */
+/** Underlined tabs. Arrow keys move between tabs (Radix roving focus). Too many for the width: the row scrolls sideways. */
 export function Tabs({
   items,
   value,
@@ -28,12 +28,12 @@ export function Tabs({
 }) {
   return (
     <RadixTabs.Root value={value} defaultValue={defaultValue ?? items[0]?.value} onValueChange={onValueChange}>
-      <RadixTabs.List aria-label={label} className="flex gap-6 border-b border-rule">
+      <RadixTabs.List aria-label={label} className="flex gap-6 overflow-x-auto border-b border-rule [scrollbar-width:none]">
         {items.map((t) => (
           <RadixTabs.Trigger
             key={t.value}
             value={t.value}
-            className="-mb-px flex h-10 items-center gap-2 border-b-2 border-transparent text-sm text-graphite transition-colors duration-150 hover:text-ink data-[state=active]:border-accent data-[state=active]:text-ink"
+            className="-mb-px flex h-10 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 border-transparent text-sm text-graphite transition-colors duration-150 hover:text-ink data-[state=active]:border-accent data-[state=active]:text-ink"
           >
             {t.label}
             {t.count !== undefined && <span className="text-xs tabular-nums text-graphite">{t.count}</span>}
