@@ -11,3 +11,4 @@ export { Dialog, DialogClose } from "./dialog";
 export { Menu, MenuItem, MenuLabel, MenuSeparator, MenuRadioGroup, MenuRadioItem } from "./menu";
 export { Tabs, type TabItem } from "./tabs";
 export { ToastProvider, useToast, type ToastOptions } from "./toast";
+export { Switch } from "./switch";

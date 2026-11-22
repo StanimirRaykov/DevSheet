@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { EmptyState, Skeleton } from "@/components/ui";
+import { Skeleton } from "@/components/ui";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { AccountTab } from "./_components/account-tab";
 import { parseSettingsTab } from "./_components/settings-tab-names";
 import { SignInTab } from "./_components/sign-in-tab";
+import { PublicPageTab } from "./_components/public-page-tab";
+import { DeleteTab } from "./_components/delete-tab";
 import { SettingsTabs } from "./_components/settings-tabs";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -15,7 +17,6 @@ async function Settings({ searchParams }: { searchParams: SettingsSearchParams }
   const params = await searchParams;
   // Linking a sign-in method or connecting GitHub comes back here; a problem arrives as ?error=.
   const error = authErrorMessage(params.error);
-  const later = (what: string) => <EmptyState title="Coming in the next step" description={what} />;
 
   return (
     <>
@@ -27,8 +28,8 @@ async function Settings({ searchParams }: { searchParams: SettingsSearchParams }
         panels={{
           account: <AccountTab />,
           "sign-in": <SignInTab />,
-          "public-page": later("Your address, publishing and what the page shows."),
-          delete: later("Deleting your account."),
+          "public-page": <PublicPageTab />,
+          delete: <DeleteTab />,
         }}
       />
     </>
