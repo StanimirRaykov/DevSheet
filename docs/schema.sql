@@ -19,6 +19,7 @@ CREATE TABLE "Users" (
     "IsPublished" boolean NOT NULL,
     "CreatedAt" timestamp with time zone NOT NULL,
     "OnboardingCompletedAt" timestamp with time zone,
+    "OnboardingStep" integer NOT NULL,
     CONSTRAINT "PK_Users" PRIMARY KEY ("Id")
 );
 

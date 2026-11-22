@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<DevSheet.Infrastructure.Cv.CvDataService>();
         services.AddScoped<DevSheet.Infrastructure.Accounts.AccountService>();
         services.AddScoped<DevSheet.Infrastructure.Accounts.AccountSettingsService>();
+        services.AddScoped<DevSheet.Infrastructure.Accounts.OnboardingService>();
         return services;
     }
 }

@@ -43,7 +43,8 @@ public class GoogleSignInTests(WebApplicationFactory<Program> factory) : IClassF
         var callback = await client.GetAsync($"/signin-google?code=test-code&state={Uri.EscapeDataString(state)}");
 
         Assert.Equal(HttpStatusCode.Found, callback.StatusCode);
-        Assert.Equal("http://localhost:3000/dashboard/projects", callback.Headers.Location!.ToString());
+        // A new account goes through the welcome flow first.
+        Assert.Equal("http://localhost:3000/welcome", callback.Headers.Location!.ToString());
         Assert.Contains(callback.Headers.GetValues("Set-Cookie"), c => c.StartsWith("devsheet.auth="));
 
         using var db = _api.Db();
@@ -65,6 +66,24 @@ public class GoogleSignInTests(WebApplicationFactory<Program> factory) : IClassF
 
         using var db = _api.Db();
         Assert.Equal(1, await db.Users.CountAsync(u => u.Logins.Any(l => l.Provider == LoginProviders.Google)));
+    }
+
+    [Fact]
+    public async Task An_account_that_finished_the_welcome_flow_goes_to_the_page_it_asked_for()
+    {
+        var first = Client();
+        await first.GetAsync($"/signin-google?code=c&state={Uri.EscapeDataString(await StartAsync(first))}");
+        using (var db = _api.Db())
+        {
+            var user = await db.Users.SingleAsync(u => u.Logins.Any(l => l.ProviderKey == FakeGoogle.Subject));
+            user.OnboardingCompletedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        var second = Client();
+        var callback = await second.GetAsync($"/signin-google?code=c&state={Uri.EscapeDataString(await StartAsync(second, "/dashboard/projects"))}");
+
+        Assert.Equal("http://localhost:3000/dashboard/projects", callback.Headers.Location!.ToString());
     }
 
     [Fact]

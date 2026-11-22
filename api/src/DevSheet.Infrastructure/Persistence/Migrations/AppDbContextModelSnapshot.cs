@@ -400,6 +400,9 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("OnboardingCompletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("OnboardingStep")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("text");

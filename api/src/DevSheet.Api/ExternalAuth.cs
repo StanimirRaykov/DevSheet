@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using DevSheet.Infrastructure.Accounts;
+using DevSheet.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.EntityFrameworkCore;
 
 namespace DevSheet.Api;
 
@@ -64,6 +66,14 @@ public static class ExternalAuth
         ((ClaimsIdentity)ctx.Principal!.Identity!).AddClaim(new Claim(UserIdClaim, userId.ToString()));
         if (outcome.Error is not null)
             ctx.Properties.RedirectUri = WithError(ctx.Properties.RedirectUri ?? "", outcome.Error);
+        else if (intent == AuthIntent.SignIn)
+        {
+            var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            var completed = await db.Users.Where(u => u.Id == userId)
+                .Select(u => u.OnboardingCompletedAt != null).FirstAsync(ctx.HttpContext.RequestAborted);
+            var webOrigin = ctx.HttpContext.RequestServices.GetRequiredService<IConfiguration>()["WebOrigin"]!;
+            ctx.Properties.RedirectUri = SignInRedirect.After(ctx.Properties.RedirectUri ?? "", webOrigin, completed);
+        }
     }
 
     /// <summary>

@@ -38,7 +38,8 @@ erDiagram
         text Slug UK "public URL"
         boolean IsPublished "opt-in"
         timestamptz CreatedAt
-        timestamptz OnboardingCompletedAt
+        timestamptz OnboardingCompletedAt "null until the welcome flow is finished or skipped"
+        integer OnboardingStep "welcome step last reached"
     }
     ExternalLogins {
         uuid Id PK
