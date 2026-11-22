@@ -81,7 +81,7 @@ public static class CareerValidator
         return e.Result;
     }
 
-    private static bool IsEmail(string value)
+    public static bool IsEmail(string value)
     {
         try { return new MailAddress(value).Address == value; }
         catch (FormatException) { return false; }
