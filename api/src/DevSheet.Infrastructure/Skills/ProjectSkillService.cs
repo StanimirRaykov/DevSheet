@@ -8,10 +8,64 @@ namespace DevSheet.Infrastructure.Skills;
 public record SkillLinkDto(Guid SkillId, string Name, LinkStatus Status);
 public record SkillOption(Guid Id, string Name);
 
+/// <summary>One project a skill is linked to, with the link's status and the project's own status.</summary>
+public record SkillProjectLink(Guid ProjectId, string ProjectTitle, ProjectStatus ProjectStatus, LinkStatus Status);
+
+/// <summary>A skill on any of the caller's projects, with every link to it.</summary>
+public record SkillSummary(Guid SkillId, string Name, string Category, IReadOnlyList<SkillProjectLink> Projects);
+
+public record SkillLinkKey(Guid ProjectId, Guid SkillId);
+
 /// <summary>Owner actions on skill links. Every method checks that the project belongs to the caller.</summary>
 public class ProjectSkillService(AppDbContext db)
 {
     public const int MaxNameLength = 60;
+    public const int BulkMax = 500;
+
+    /// <summary>
+    /// Every skill linked to one of the caller's projects, A to Z, each with its links (project A to Z). Only the
+    /// caller's projects are read, so another user's links to the same skill never appear.
+    /// </summary>
+    public async Task<IReadOnlyList<SkillSummary>> ListAsync(Guid userId, CancellationToken ct = default)
+    {
+        var rows = await db.ProjectSkills
+            .Where(l => l.Project!.UserId == userId)
+            .Select(l => new
+            {
+                l.SkillId, SkillName = l.Skill!.Name, l.ProjectId,
+                Title = l.Project!.TitleOverride ?? l.Project.GithubRepo!.Name, ProjectStatus = l.Project.Status, l.Status,
+            })
+            .ToListAsync(ct);
+
+        return rows
+            .GroupBy(r => (r.SkillId, r.SkillName))
+            .Select(g => new SkillSummary(g.Key.SkillId, g.Key.SkillName, SkillCatalog.CategoryOf(g.Key.SkillName),
+                g.OrderBy(r => r.Title, StringComparer.OrdinalIgnoreCase)
+                    .Select(r => new SkillProjectLink(r.ProjectId, r.Title, r.ProjectStatus, r.Status)).ToList()))
+            .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Sets several links to one status, Suggested included (that is how Undo and Restore put a skill back in the
+    /// queue). All or nothing: null, and no change, when any link is not on one of the caller's projects.
+    /// </summary>
+    public async Task<int?> SetStatusesAsync(Guid userId, IReadOnlyCollection<SkillLinkKey> keys, LinkStatus status, CancellationToken ct = default)
+    {
+        var wanted = keys.ToHashSet();
+        var projectIds = wanted.Select(k => k.ProjectId).Distinct().ToList();
+        var skillIds = wanted.Select(k => k.SkillId).Distinct().ToList();
+        var links = (await db.ProjectSkills
+                .Where(l => l.Project!.UserId == userId && projectIds.Contains(l.ProjectId) && skillIds.Contains(l.SkillId))
+                .ToListAsync(ct))
+            .Where(l => wanted.Contains(new SkillLinkKey(l.ProjectId, l.SkillId)))
+            .ToList();
+        if (links.Count != wanted.Count) return null;
+
+        foreach (var link in links) link.Status = status;
+        await db.SaveChangesAsync(ct); // one transaction
+        return links.Count;
+    }
 
     /// <summary>Confirm or reject an existing link. False when the link is not on one of the caller's projects.</summary>
     public async Task<bool> SetStatusAsync(Guid userId, Guid projectId, Guid skillId, LinkStatus status, CancellationToken ct = default)
