@@ -1,29 +1,25 @@
 import type { Metadata } from "next";
-import { cacheLife, cacheTag } from "next/cache";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { PublicPortfolio, SERVER_API } from "@/lib/api";
-import { publicPageTag } from "@/lib/public-page-tag";
 import { Portfolio } from "./_components/portfolio";
-
-// Public pages read only stored data from our API and never call GitHub.
-// Cached for a minute and shared by the page and its metadata. null = no published page with this slug.
-// Settings refreshes the tag at once when the owner moves, unpublishes or deletes the page.
-async function loadPortfolio(slug: string): Promise<PublicPortfolio | null> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag(publicPageTag(slug));
-  const res = await fetch(`${SERVER_API}/api/public/${encodeURIComponent(slug)}`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GET /api/public/${slug} failed with ${res.status}`);
-  return (await res.json()) as PublicPortfolio;
-}
+import { loadPortfolio } from "./load-portfolio";
 
 export async function generateMetadata({ params }: PageProps<"/[slug]">): Promise<Metadata> {
   const data = await loadPortfolio((await params).slug);
-  if (!data) return { title: "Page not found" };
+  // Unknown or unpublished. Search engines and link previews (Slack, X, LinkedIn...) get metadata before the
+  // page streams, so for them this is a real 404 status. Browsers get the page streamed: the status is already
+  // 200 by then, and Next.js marks the not-found page noindex instead.
+  if (!data) notFound();
   const name = data.profile?.fullName || data.displayName;
-  return { title: name, description: data.profile?.headline || `${name}'s projects and skills.` };
+  const description = data.profile?.headline || `${name}'s projects and skills.`;
+  // The preview card when the link is shared; the image comes from opengraph-image.tsx next to this page.
+  return {
+    title: name,
+    description,
+    alternates: { canonical: `/${data.slug}` },
+    openGraph: { type: "profile", title: `${name} · DevSheet`, description, url: `/${data.slug}`, siteName: "DevSheet" },
+    twitter: { card: "summary_large_image", title: `${name} · DevSheet`, description },
+  };
 }
 
 async function PortfolioPage({ params }: { params: Promise<{ slug: string }> }) {

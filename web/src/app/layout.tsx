@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Schibsted_Grotesk, Source_Serif_4 } from "next/font/google";
 import { MotionProvider } from "@/components/motion-provider";
+import { siteUrl } from "@/lib/site";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -12,6 +13,8 @@ const serif = Source_Serif_4({ variable: "--font-document", subsets: ["latin", "
 const code = JetBrains_Mono({ variable: "--font-code", subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  // Share cards and canonical links need absolute URLs.
+  metadataBase: new URL(siteUrl()),
   title: { default: "DevSheet", template: "%s · DevSheet" },
   description: "A portfolio and CV for software engineers, built from their GitHub work and kept in sync.",
 };

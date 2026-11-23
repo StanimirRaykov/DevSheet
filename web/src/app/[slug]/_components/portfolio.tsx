@@ -35,15 +35,15 @@ export function Portfolio({ data }: { data: PublicPortfolio }) {
         {matrix.length > 0 && (
           <Section id="skills" title="Skills">
             {data.projects.length > 1 && data.projects.length <= MAX_DOTS && (
-              <p className="mb-5 text-sm text-graphite">Each dot is one of the projects below, in the same order. A filled dot means the skill was used there.</p>
+              <p className="mb-5 text-sm text-graphite print:mb-2">Each dot is one of the projects below, in the same order. A filled dot means the skill was used there.</p>
             )}
-            <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2 print:grid-cols-2">
+            <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2 print:grid-cols-3 print:gap-y-3">
               {matrix.map((group) => (
                 <div key={group.category} className="break-inside-avoid">
                   <h3 className="mb-1 text-sm font-medium text-graphite">{group.category}</h3>
                   <ul className="divide-y divide-rule">
                     {group.rows.map((row) => (
-                      <li key={row.name} title={`Used in ${row.projects.join(", ")}`} className="flex items-center justify-between gap-4 py-1.5">
+                      <li key={row.name} title={`Used in ${row.projects.join(", ")}`} className="flex items-center justify-between gap-4 py-1.5 print:py-0.5">
                         <span className="text-ink">{row.name}</span>
                         {data.projects.length > 1 && data.projects.length <= MAX_DOTS ? (
                           <span aria-hidden className="flex shrink-0 gap-1">
@@ -69,7 +69,7 @@ export function Portfolio({ data }: { data: PublicPortfolio }) {
 
         {data.projects.length > 0 && (
           <Section id="projects" title="Projects">
-            <ol className="grid gap-4 sm:grid-cols-2 print:grid-cols-2">
+            <ol className="grid gap-4 sm:grid-cols-2 print:grid-cols-3 print:gap-2">
               {data.projects.map((p, i) => (
                 <li key={p.url} className="break-inside-avoid">
                   <ProjectCard project={p} number={i + 1} />
@@ -81,7 +81,7 @@ export function Portfolio({ data }: { data: PublicPortfolio }) {
 
         {data.experience.length > 0 && (
           <Section id="experience" title="Experience">
-            <ol className="relative flex flex-col gap-7 border-l border-rule pl-6">
+            <ol className="relative flex flex-col gap-7 border-l border-rule pl-6 print:gap-3">
               {data.experience.map((x) => (
                 <li key={`${x.company}-${x.startDate}`} className="relative break-inside-avoid">
                   <span
@@ -165,7 +165,7 @@ function Header({ data, name }: { data: PublicPortfolio; name: string }) {
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
         <Avatar name={name} src={data.avatarUrl} size={72} className="shrink-0 print:hidden" />
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="font-serif text-[2rem] leading-tight font-semibold tracking-tight text-ink sm:text-display">{name}</h1>
+          <h1 className="font-serif text-[2rem] leading-tight font-semibold tracking-tight text-ink sm:text-display print:text-[22pt]">{name}</h1>
           {p?.headline && <p className="text-lg text-graphite">{p.headline}</p>}
           {contact.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
@@ -197,9 +197,9 @@ function Section({ id, title, children }: { id: string; title: string; children:
   return (
     <section
       aria-labelledby={`${id}-heading`}
-      className="mt-10 grid gap-4 border-t border-rule pt-8 md:grid-cols-[9rem_minmax(0,1fr)] md:gap-10 print:mt-6 print:pt-4"
+      className="mt-10 grid gap-4 border-t border-rule pt-8 md:grid-cols-[9rem_minmax(0,1fr)] md:gap-10 print:mt-4 print:grid-cols-[7rem_minmax(0,1fr)] print:gap-4 print:pt-3"
     >
-      <h2 id={`${id}-heading`} className="font-serif text-xl font-semibold text-ink md:text-lg">{title}</h2>
+      <h2 id={`${id}-heading`} className="font-serif text-xl font-semibold text-ink md:text-lg print:text-base">{title}</h2>
       <div className="min-w-0">{children}</div>
     </section>
   );
@@ -244,7 +244,7 @@ function ProjectCard({ project, number }: { project: PublicPortfolio["projects"]
         </div>
       )}
       {project.skills.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5" aria-label="Skills">
+        <ul className="flex flex-wrap gap-1.5 print:hidden" aria-label="Skills">
           {project.skills.map((s) => (
             <li key={s} className="rounded-full border border-rule px-2 py-0.5 text-xs text-ink">{s}</li>
           ))}
