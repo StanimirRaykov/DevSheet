@@ -108,6 +108,8 @@ describe("SkillsView", () => {
     await userEvent.keyboard("{ArrowDown}");
     expect(within(queue()).getByRole("listitem", { name: /^Rust/ })).toHaveFocus();
     await userEvent.keyboard("r");
+    // Rust leaves; Zig moves up into its place and gets the focus.
+    await waitFor(() => expect(within(queue()).getByRole("listitem", { name: /^Zig/ })).toHaveFocus());
     await userEvent.keyboard("{ArrowUp}c");
 
     expect(patches()).toEqual([

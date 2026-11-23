@@ -21,20 +21,25 @@ export function SuggestionQueue({
   onConfirmProject: (title: string, links: SkillLinkKey[]) => void;
 }) {
   const presets = useMotionPresets();
-  const rows = useRef<(HTMLLIElement | null)[]>([]);
+  const rows = useRef(new Map<string, HTMLLIElement>());
   const [active, setActive] = useState(0);
-  const [focusPending, setFocusPending] = useState(false);
+  // After a decision by keyboard: the row that leaves, and the one that gets the focus once it has gone.
+  const [handoff, setHandoff] = useState<{ leaving: string; next: string | null } | null>(null);
   const current = Math.min(active, suggestions.length - 1);
   const byProject = suggestionsByProject(suggestions);
   const [project, setProject] = useState("");
   const chosen = byProject.find((p) => p.projectId === project) ?? byProject[0];
 
-  // After a decision by keyboard, keep the focus in the list on the row that moved up into its place.
+  // Keep the focus in the list: once the decided row has left, focus the one that took its place.
   useEffect(() => {
-    if (!focusPending) return;
-    rows.current[current]?.focus();
-    setFocusPending(false); // eslint-disable-line react-hooks/set-state-in-effect -- one-shot focus request
-  }, [focusPending, current, suggestions.length]);
+    if (!handoff || suggestions.some((s) => s.skillId === handoff.leaving)) return;
+    const index = suggestions.findIndex((s) => s.skillId === handoff.next);
+    if (index >= 0) {
+      rows.current.get(handoff.next!)?.focus();
+      setActive(index); // eslint-disable-line react-hooks/set-state-in-effect -- one-shot focus hand-off
+    }
+    setHandoff(null);
+  }, [handoff, suggestions]);
 
   function onKey(e: KeyboardEvent<HTMLLIElement>, i: number) {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -43,11 +48,11 @@ export function SuggestionQueue({
       e.preventDefault();
       const next = Math.max(0, Math.min(suggestions.length - 1, i + (key === "arrowdown" ? 1 : -1)));
       setActive(next);
-      rows.current[next]?.focus();
+      rows.current.get(suggestions[next].skillId)?.focus();
     } else if (key === "c" || key === "r") {
       e.preventDefault();
-      setActive(i);
-      setFocusPending(true);
+      const next = suggestions[i + 1] ?? suggestions[i - 1];
+      setHandoff({ leaving: suggestions[i].skillId, next: next?.skillId ?? null });
       onDecide(suggestions[i], key === "c" ? 1 : 2);
     }
   }
@@ -75,7 +80,10 @@ export function SuggestionQueue({
             {suggestions.map((s, i) => (
               <motion.li
                 key={s.skillId}
-                ref={(el) => { rows.current[i] = el; }}
+                ref={(el) => {
+                  if (el) rows.current.set(s.skillId, el);
+                  else if (rows.current.get(s.skillId)?.isConnected === false) rows.current.delete(s.skillId);
+                }}
                 layout="position"
                 variants={presets.listItem}
                 initial="initial"
