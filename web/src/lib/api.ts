@@ -20,6 +20,8 @@ export interface DashboardProject {
   stars: number;
   languagesJson: string;
   sourceMissing: boolean;
+  /** Last push to the repository on GitHub; null when GitHub never said. */
+  pushedAt: string | null;
   skills: DashboardSkill[];
 }
 

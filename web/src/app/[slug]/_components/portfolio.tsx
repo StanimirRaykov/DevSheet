@@ -2,6 +2,7 @@ import { Download, Globe, Mail, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { GithubMark } from "@/components/github-mark";
+import { LanguageBar } from "@/components/language-bar";
 import { Avatar, buttonClasses, cn } from "@/components/ui";
 import { PUBLIC_API, type PublicPortfolio } from "@/lib/api";
 import { summarizeLevels } from "@/lib/cefr";
@@ -205,9 +206,6 @@ function Section({ id, title, children }: { id: string; title: string; children:
   );
 }
 
-/** Shades of the accent for the language bar, largest share first; the last one is for "Other". */
-const SHARE_COLOURS = ["bg-accent", "bg-accent/55", "bg-accent/30", "bg-rule-strong"];
-
 function ProjectCard({ project, number }: { project: PublicPortfolio["projects"][number]; number: number }) {
   const shares = languageShares(project.languagesJson);
   return (
@@ -226,23 +224,7 @@ function ProjectCard({ project, number }: { project: PublicPortfolio["projects"]
         )}
       </div>
       {project.description && <p className="text-sm leading-relaxed text-graphite">{project.description}</p>}
-      {shares.length > 0 && (
-        <div className="mt-auto flex flex-col gap-1.5">
-          <div aria-hidden className="flex h-1.5 overflow-hidden rounded-full bg-rule print:hidden">
-            {shares.map((s, i) => (
-              <span key={s.name} className={SHARE_COLOURS[s.name === "Other" ? 3 : i]} style={{ width: `${s.percent}%` }} />
-            ))}
-          </div>
-          <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-graphite">
-            {shares.map((s, i) => (
-              <li key={s.name} className="flex items-center gap-1.5">
-                <span aria-hidden className={cn("size-2 rounded-full print:hidden", SHARE_COLOURS[s.name === "Other" ? 3 : i])} />
-                {s.name} {s.percent}%
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <LanguageBar shares={shares} className="mt-auto" />
       {project.skills.length > 0 && (
         <ul className="flex flex-wrap gap-1.5 print:hidden" aria-label="Skills">
           {project.skills.map((s) => (
