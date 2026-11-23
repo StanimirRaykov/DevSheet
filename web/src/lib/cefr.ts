@@ -40,3 +40,13 @@ export function summarizeLevels(levels: LevelSet): string {
     .map((s) => `${s.label} ${levelLabel(levels[s.key])}`)
     .join(" · ");
 }
+
+/** A name and a one-line description per level, shown as hints next to the level selectors. */
+export const LEVEL_INFO: Record<number, { name: string; description: string }> = {
+  1: { name: "Beginner", description: "Understands and uses familiar everyday expressions and very basic phrases." },
+  2: { name: "Elementary", description: "Handles short, routine exchanges about familiar things." },
+  3: { name: "Intermediate", description: "Copes with most everyday situations and can describe experiences and plans." },
+  4: { name: "Upper intermediate", description: "Talks with native speakers without strain and follows complex texts in their field." },
+  5: { name: "Advanced", description: "Uses the language flexibly for work and study, including complex topics." },
+  6: { name: "Proficient", description: "Understands almost everything and expresses things precisely, with fine shades of meaning." },
+};

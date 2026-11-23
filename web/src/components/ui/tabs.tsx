@@ -2,6 +2,7 @@
 
 import * as RadixTabs from "@radix-ui/react-tabs";
 import type { ReactNode } from "react";
+import { cn } from "./cn";
 
 export interface TabItem {
   value: string;
@@ -18,6 +19,7 @@ export function Tabs({
   defaultValue,
   onValueChange,
   label,
+  listClassName,
 }: {
   items: TabItem[];
   value?: string;
@@ -25,10 +27,12 @@ export function Tabs({
   onValueChange?: (value: string) => void;
   /** Accessible name of the tab list. */
   label: string;
+  /** Extra classes for the tab row, e.g. "hidden sm:flex" when phones get a select instead. */
+  listClassName?: string;
 }) {
   return (
     <RadixTabs.Root value={value} defaultValue={defaultValue ?? items[0]?.value} onValueChange={onValueChange}>
-      <RadixTabs.List aria-label={label} className="flex gap-6 overflow-x-auto border-b border-rule [scrollbar-width:none]">
+      <RadixTabs.List aria-label={label} className={cn("flex gap-6 overflow-x-auto border-b border-rule [scrollbar-width:none]", listClassName)}>
         {items.map((t) => (
           <RadixTabs.Trigger
             key={t.value}
