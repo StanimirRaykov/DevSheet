@@ -32,7 +32,7 @@ const view = (over: Partial<OnboardingView> = {}): OnboardingView => ({
   step: "About", completedAt: null, displayName: "Ana", headline: "", githubLogin: null, lastSyncedAt: null, ...over,
 });
 const project = (id: string, title: string): DashboardProject => ({
-  id, title, status: 0, description: null, url: `https://github.com/ana/${id}`, stars: 0, languagesJson: '{"C#":100}', sourceMissing: false, skills: [],
+  id, title, status: 0, description: null, url: `https://github.com/ana/${id}`, stars: 0, languagesJson: '{"C#":100}', sourceMissing: false, pushedAt: null, skills: [],
 });
 
 /** The API for one test: the onboarding view, plus what sync and the project list answer. */

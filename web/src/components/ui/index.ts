@@ -12,3 +12,4 @@ export { Menu, MenuItem, MenuLabel, MenuSeparator, MenuRadioGroup, MenuRadioItem
 export { Tabs, type TabItem } from "./tabs";
 export { ToastProvider, useToast, type ToastOptions } from "./toast";
 export { Switch } from "./switch";
+export { SidePanel } from "./side-panel";

@@ -61,21 +61,47 @@ public class MeController(AppDbContext db, IGitHubSyncService sync, ProjectSkill
                 Title = p.TitleOverride ?? p.GithubRepo!.Name,
                 Description = p.DescriptionOverride ?? p.GithubRepo!.Description,
                 Url = p.GithubRepo!.HtmlUrl, p.GithubRepo.Stars, p.GithubRepo.LanguagesJson,
-                p.GithubRepo.SourceMissing,
+                p.GithubRepo.SourceMissing, p.GithubRepo.PushedAt,
                 Skills = p.Skills.OrderBy(ps => ps.Skill!.Name)
                     .Select(ps => new { ps.SkillId, Name = ps.Skill!.Name, ps.Status })
             }).ToListAsync());
 
     public record StatusDto(ProjectStatus Status);
 
+    private const string BadStatus = "Status must be Pending (0), Visible (1) or Hidden (2).";
+
     [HttpPatch("projects/{id:guid}/status")]
     public async Task<IActionResult> SetStatus(Guid id, StatusDto dto)
     {
+        if (!Enum.IsDefined(dto.Status)) return BadRequest(new { error = BadStatus });
         var p = await db.Projects.FirstOrDefaultAsync(x => x.Id == id && x.UserId == Uid);
         if (p is null) return NotFound();
         p.Status = dto.Status;
         await db.SaveChangesAsync();
         return NoContent();
+    }
+
+    public const int BulkMax = 200;
+
+    public record BulkStatusDto(List<Guid>? Ids, ProjectStatus Status);
+
+    /// <summary>
+    /// Sets the status of several of my projects at once. All or nothing: if any id is not one of my projects
+    /// (unknown, or someone else's), the answer is 404 and nothing changes, so a stale list cannot half-apply.
+    /// </summary>
+    [HttpPatch("projects/status")]
+    public async Task<IActionResult> SetStatuses(BulkStatusDto dto)
+    {
+        if (!Enum.IsDefined(dto.Status)) return BadRequest(new { error = BadStatus });
+        var ids = (dto.Ids ?? []).Distinct().ToList();
+        if (ids.Count == 0) return BadRequest(new { error = "Choose at least one project." });
+        if (ids.Count > BulkMax) return BadRequest(new { error = $"Choose at most {BulkMax} projects at a time." });
+
+        var projects = await db.Projects.Where(p => p.UserId == Uid && ids.Contains(p.Id)).ToListAsync();
+        if (projects.Count != ids.Count) return NotFound(new { error = "Some of these projects no longer exist. Reload and try again." });
+        foreach (var p in projects) p.Status = dto.Status;
+        await db.SaveChangesAsync(); // one SaveChanges is one transaction
+        return Ok(new { updated = projects.Count });
     }
 
     [HttpPost("publish")]

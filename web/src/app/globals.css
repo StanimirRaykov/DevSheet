@@ -123,6 +123,8 @@
   --animate-toast-out: fade-out 160ms ease-in;
   --animate-drawer-in: drawer-in 240ms var(--ease-settle);
   --animate-drawer-out: drawer-out 160ms ease-in;
+  --animate-side-in: side-in 240ms var(--ease-settle);
+  --animate-side-out: side-out 160ms ease-in;
 
   @keyframes fade-in { from { opacity: 0; } }
   @keyframes fade-out { to { opacity: 0; } }
@@ -132,6 +134,8 @@
   @keyframes toast-in { from { opacity: 0; transform: translateY(12px); } }
   @keyframes drawer-in { from { transform: translateX(-100%); } }
   @keyframes drawer-out { to { transform: translateX(-100%); } }
+  @keyframes side-in { from { transform: translateX(100%); } }
+  @keyframes side-out { to { transform: translateX(100%); } }
 }
 
 body {
