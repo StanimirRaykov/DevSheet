@@ -3,6 +3,7 @@ using DevSheet.Api.Controllers;
 using DevSheet.Application.Career;
 using DevSheet.Infrastructure.Career;
 using Microsoft.AspNetCore.Mvc;
+using DevSheet.Infrastructure.Cv;
 
 namespace DevSheet.Tests;
 
@@ -10,7 +11,7 @@ public class PublicProfileTests
 {
     private static JsonElement Get(TestDb t, string slug)
     {
-        var ok = Assert.IsType<OkObjectResult>(new PublicController(t.Db).Get(slug).GetAwaiter().GetResult());
+        var ok = Assert.IsType<OkObjectResult>(new PublicController(t.Db, new CvDataService(t.Db)).Get(slug).GetAwaiter().GetResult());
         return JsonSerializer.SerializeToElement(ok.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web));
     }
 

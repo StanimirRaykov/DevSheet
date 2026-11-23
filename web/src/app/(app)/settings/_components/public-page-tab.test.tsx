@@ -91,7 +91,7 @@ describe("AddressForm", () => {
 });
 
 describe("Visibility", () => {
-  const page: PublicPage = { slug: "ana-petrova", isPublished: false, showEmail: false, showLocation: false };
+  const page: PublicPage = { slug: "ana-petrova", isPublished: false, showEmail: false, showLocation: false, allowCvDownload: false };
 
   it("publishes at once with a toast and refreshes the cached page", async () => {
     answer = (_p, _m, body) => ok({ ...page, ...(body as object) });
@@ -103,6 +103,20 @@ describe("Visibility", () => {
     expect(await screen.findByText("Page published")).toBeVisible();
     expect(latest.isPublished).toBe(true);
     expect(refreshed).toEqual([["ana-petrova"]]);
+  });
+
+  it("turns the public CV download on, which is off at first", async () => {
+    answer = (_p, _m, body) => ok({ ...page, ...(body as object) });
+    let latest = page;
+    render(<ToastProvider><Visibility page={page} onChange={(p) => (latest = p)} /></ToastProvider>);
+    const cv = screen.getByRole("switch", { name: "CV download" });
+    expect(cv).not.toBeChecked();
+
+    await userEvent.click(cv);
+
+    expect(calls).toContain("PATCH /api/me/public-page");
+    expect(await screen.findByText("CV download turned on")).toBeVisible();
+    expect(latest.allowCvDownload).toBe(true);
   });
 
   it("says the email shown is the profile email, not the sign-in one", () => {

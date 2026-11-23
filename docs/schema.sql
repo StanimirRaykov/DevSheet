@@ -123,8 +123,10 @@ CREATE TABLE "Profiles" (
     "Summary" text NOT NULL,
     "Location" text NOT NULL,
     "Email" text NOT NULL,
+    "Website" text NOT NULL,
     "ShowEmailPublicly" boolean NOT NULL,
     "ShowLocationPublicly" boolean NOT NULL,
+    "AllowPublicCvDownload" boolean NOT NULL,
     CONSTRAINT "PK_Profiles" PRIMARY KEY ("Id"),
     CONSTRAINT "FK_Profiles_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
 );

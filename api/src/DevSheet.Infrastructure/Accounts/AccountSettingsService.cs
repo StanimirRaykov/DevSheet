@@ -13,10 +13,10 @@ public record AccountView(string DisplayName, string? Email, string? AvatarUrl);
 /// <summary>PATCH body: a null field is left unchanged. An empty email removes it.</summary>
 public record AccountInput(string? DisplayName, string? Email);
 
-public record PublicPageView(string Slug, bool IsPublished, bool ShowEmail, bool ShowLocation);
+public record PublicPageView(string Slug, bool IsPublished, bool ShowEmail, bool ShowLocation, bool AllowCvDownload);
 
 /// <summary>PATCH body: a null field is left unchanged.</summary>
-public record PublicPageInput(bool? IsPublished, bool? ShowEmail, bool? ShowLocation);
+public record PublicPageInput(bool? IsPublished, bool? ShowEmail, bool? ShowLocation, bool? AllowCvDownload = null);
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SlugStatus { Available, Current, Invalid, Reserved, Taken }
@@ -104,23 +104,26 @@ public class AccountSettingsService(AppDbContext db)
     public async Task<PublicPageView> GetPublicPageAsync(Guid userId, CancellationToken ct = default) =>
         await db.Users.Where(u => u.Id == userId)
             .Select(u => new PublicPageView(u.Slug, u.IsPublished,
-                u.Profile != null && u.Profile.ShowEmailPublicly, u.Profile != null && u.Profile.ShowLocationPublicly))
+                u.Profile != null && u.Profile.ShowEmailPublicly, u.Profile != null && u.Profile.ShowLocationPublicly,
+                u.Profile != null && u.Profile.AllowPublicCvDownload))
             .FirstAsync(ct);
 
     public async Task<PublicPageView> UpdatePublicPageAsync(Guid userId, PublicPageInput input, CancellationToken ct = default)
     {
         var user = await db.Users.Include(u => u.Profile).FirstAsync(u => u.Id == userId, ct);
         if (input.IsPublished is { } published) user.IsPublished = published;
-        if (input.ShowEmail is not null || input.ShowLocation is not null)
+        if (input.ShowEmail is not null || input.ShowLocation is not null || input.AllowCvDownload is not null)
         {
             // The switches live on the profile; an empty one is created the first time they are used.
             if (user.Profile is null) db.Profiles.Add(user.Profile = new Profile { UserId = userId });
             if (input.ShowEmail is { } showEmail) user.Profile.ShowEmailPublicly = showEmail;
             if (input.ShowLocation is { } showLocation) user.Profile.ShowLocationPublicly = showLocation;
+            if (input.AllowCvDownload is { } allowCv) user.Profile.AllowPublicCvDownload = allowCv;
         }
         await db.SaveChangesAsync(ct);
         return new PublicPageView(user.Slug, user.IsPublished,
-            user.Profile?.ShowEmailPublicly ?? false, user.Profile?.ShowLocationPublicly ?? false);
+            user.Profile?.ShowEmailPublicly ?? false, user.Profile?.ShowLocationPublicly ?? false,
+            user.Profile?.AllowPublicCvDownload ?? false);
     }
 
     /// <summary>

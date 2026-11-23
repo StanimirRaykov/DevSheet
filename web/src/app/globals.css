@@ -162,3 +162,37 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+  Printing a public page: black on white whatever the screen theme, no shadows or tinted fills, small margins.
+  The page itself hides what only works on screen (print: variants in its markup).
+*/
+@media print {
+  @page {
+    margin: 14mm 16mm;
+  }
+
+  /* Every selector the screen themes use, so none of them wins over paper. */
+  :root,
+  :root[data-theme],
+  :root:not([data-theme]) {
+    --paper: #ffffff;
+    --sheet: #ffffff;
+    --ink: #000000;
+    --graphite: #3d434d;
+    --rule: #d0d4db;
+    --rule-strong: #9aa1ad;
+    --accent: #000000;
+    --accent-soft: #eeeeee;
+    color-scheme: light;
+  }
+
+  body {
+    font-size: 9.5pt;
+    line-height: 1.4;
+  }
+
+  a {
+    text-decoration: none;
+  }
+}

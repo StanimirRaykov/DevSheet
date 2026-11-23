@@ -24,6 +24,7 @@ public static class CareerValidator
             if (email.Length > EmailMax) e.Add("email", $"Must be at most {EmailMax} characters.");
             else if (!IsEmail(email)) e.Add("email", "Must be a valid email address.");
         }
+        CheckUrl(e, "website", i.Website);
         return e.Result;
     }
 
@@ -71,14 +72,18 @@ public static class CareerValidator
         e.MaxLength("issuer", i.Issuer, ShortMax);
         if (i.IssueDate is { } d && d > today) e.Add("issueDate", "The issue date cannot be in the future.");
 
-        var url = i.Url?.Trim() ?? "";
-        if (url.Length > 0)
-        {
-            if (url.Length > UrlMax) e.Add("url", $"Must be at most {UrlMax} characters.");
-            else if (!Uri.TryCreate(url, UriKind.Absolute, out var u) || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps))
-                e.Add("url", "Must be a full http:// or https:// address.");
-        }
+        CheckUrl(e, "url", i.Url);
         return e.Result;
+    }
+
+    /// <summary>An optional link: empty is fine, anything else must be a full http(s) address.</summary>
+    private static void CheckUrl(Errors e, string field, string? value)
+    {
+        var url = value?.Trim() ?? "";
+        if (url.Length == 0) return;
+        if (url.Length > UrlMax) e.Add(field, $"Must be at most {UrlMax} characters.");
+        else if (!Uri.TryCreate(url, UriKind.Absolute, out var u) || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps))
+            e.Add(field, "Must be a full http:// or https:// address.");
     }
 
     public static bool IsEmail(string value)

@@ -2,6 +2,7 @@ using System.Text.Json;
 using DevSheet.Api.Controllers;
 using DevSheet.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+using DevSheet.Infrastructure.Cv;
 
 namespace DevSheet.Tests;
 
@@ -9,7 +10,7 @@ public class PublicSkillsTests
 {
     private static JsonElement Get(TestDb t, string slug)
     {
-        var result = new PublicController(t.Db).Get(slug).GetAwaiter().GetResult();
+        var result = new PublicController(t.Db, new CvDataService(t.Db)).Get(slug).GetAwaiter().GetResult();
         var ok = Assert.IsType<OkObjectResult>(result);
         // Same naming policy as ASP.NET's JSON defaults (camelCase) so tests see what clients see.
         return JsonSerializer.SerializeToElement(ok.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web));

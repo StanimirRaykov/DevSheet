@@ -25,8 +25,10 @@ export interface DashboardProject {
 
 export interface PublicPortfolio {
   displayName: string;
+  avatarUrl: string | null;
   githubLogin: string | null; // null when the owner has not connected GitHub
   slug: string;
+  cvDownload: boolean; // the owner lets visitors download the CV (off by default)
   projects: {
     title: string;
     description: string | null;
@@ -35,15 +37,24 @@ export interface PublicPortfolio {
     languagesJson: string;
     skills: string[]; // confirmed only
   }[];
-  skills: { name: string; projects: string[] }[]; // the matrix: skill -> projects
-  // email/location are null unless the owner opted in
-  profile: { fullName: string; headline: string; summary: string; location: string | null; email: string | null } | null;
+  skills: { name: string; category: string; projects: string[] }[]; // the matrix: skill -> projects, most used first
+  // email/location are null unless the owner opted in (or when empty)
+  profile: {
+    fullName: string; headline: string; summary: string;
+    location: string | null; email: string | null; website: string | null;
+  } | null;
   experience: { company: string; title: string; startDate: string; endDate: string | null; description: string }[];
   education: { institution: string; degree: string; startDate: string | null; endDate: string | null }[];
+  languages: {
+    name: string; isMotherTongue: boolean;
+    listening: number | null; reading: number | null; spokenInteraction: number | null;
+    spokenProduction: number | null; writing: number | null;
+  }[];
+  certifications: { name: string; issuer: string; issueDate: string | null; url: string | null }[];
 }
 
 export interface ProfileData {
-  fullName: string; headline: string; summary: string; location: string; email: string;
+  fullName: string; headline: string; summary: string; location: string; email: string; website: string;
   showEmailPublicly: boolean; showLocationPublicly: boolean;
 }
 export interface ExperienceItem {

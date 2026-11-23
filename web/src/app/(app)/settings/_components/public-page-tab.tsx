@@ -14,6 +14,7 @@ export interface PublicPage {
   isPublished: boolean;
   showEmail: boolean;
   showLocation: boolean;
+  allowCvDownload: boolean;
 }
 
 export interface SlugCheck {
@@ -150,7 +151,7 @@ export function Visibility({ page, onChange }: { page: PublicPage; onChange: (pa
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
-  async function update(change: Partial<Pick<PublicPage, "isPublished" | "showEmail" | "showLocation">>, done: string) {
+  async function update(change: Partial<Pick<PublicPage, "isPublished" | "showEmail" | "showLocation" | "allowCvDownload">>, done: string) {
     setBusy(true);
     const r = await send<PublicPage>("/api/me/public-page", "PATCH", change);
     setBusy(false);
@@ -186,6 +187,13 @@ export function Visibility({ page, onChange }: { page: PublicPage; onChange: (pa
           checked={page.showLocation}
           disabled={busy}
           onCheckedChange={(v) => update({ showLocation: v }, v ? "Location shown on your page" : "Location hidden from your page")}
+        />
+        <Switch
+          label="CV download"
+          description="A Download CV button on your page. The CV follows the email and location switches above."
+          checked={page.allowCvDownload}
+          disabled={busy}
+          onCheckedChange={(v) => update({ allowCvDownload: v }, v ? "CV download turned on" : "CV download turned off")}
         />
       </div>
     </SettingsSection>
