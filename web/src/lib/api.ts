@@ -25,6 +25,20 @@ export interface DashboardProject {
   skills: DashboardSkill[];
 }
 
+/** One of my skills with every project it is linked to (GET /api/me/skill-links). */
+export interface SkillSummary {
+  skillId: string;
+  name: string;
+  category: string;
+  projects: { projectId: string; projectTitle: string; projectStatus: ProjectStatus; status: LinkStatus }[];
+}
+
+/** A skill on one project: what PATCH /api/me/skill-links changes. */
+export interface SkillLinkKey {
+  projectId: string;
+  skillId: string;
+}
+
 export interface PublicPortfolio {
   displayName: string;
   avatarUrl: string | null;
