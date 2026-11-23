@@ -116,6 +116,29 @@ public class MeController(AppDbContext db, IGitHubSyncService sync, ProjectSkill
     [HttpGet("skills")]
     public async Task<IActionResult> SearchSkills([FromQuery] string? query) => Ok(await skills.SearchAsync(query));
 
+    /// <summary>All my skills with the projects behind each one: the Skills page.</summary>
+    [HttpGet("skill-links")]
+    public async Task<IActionResult> SkillLinks() => Ok(await skills.ListAsync(Uid));
+
+    public record SkillLinksDto(List<SkillLinkKey>? Links, LinkStatus Status);
+
+    /// <summary>
+    /// Confirm, reject or put back several skill links at once (a whole skill, all of a project's suggestions, an
+    /// undo). All or nothing: 404 and no change when any link is not on one of my projects.
+    /// </summary>
+    [HttpPatch("skill-links")]
+    public async Task<IActionResult> SetSkillLinks(SkillLinksDto dto)
+    {
+        if (!Enum.IsDefined(dto.Status)) return BadRequest(new { error = "Status must be Suggested (0), Confirmed (1) or Rejected (2)." });
+        var keys = (dto.Links ?? []).Distinct().ToList();
+        if (keys.Count == 0) return BadRequest(new { error = "Choose at least one skill." });
+        if (keys.Count > ProjectSkillService.BulkMax) return BadRequest(new { error = $"Choose at most {ProjectSkillService.BulkMax} at a time." });
+        var updated = await skills.SetStatusesAsync(Uid, keys, dto.Status);
+        return updated is null
+            ? NotFound(new { error = "Some of these skills are no longer on your projects. Reload and try again." })
+            : Ok(new { updated });
+    }
+
     public record SkillStatusDto(LinkStatus Status);
 
     /// <summary>Confirm or reject a skill on one of my projects.</summary>
