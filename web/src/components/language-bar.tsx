@@ -7,10 +7,24 @@ const colour = (s: LanguageShare, i: number) => SHARE_COLOURS[s.name === "Other"
 
 /**
  * A repository's languages as one bar plus a legend with percentages. The bar is decoration; the legend carries
- * the information, so colour is never the only signal. `compact` drops the legend to the top language only.
+ * the information, so colour is never the only signal. `compact` puts the bar and the top language on one line,
+ * for lists.
  */
 export function LanguageBar({ shares, compact = false, className }: { shares: LanguageShare[]; compact?: boolean; className?: string }) {
   if (shares.length === 0) return null;
+  if (compact) {
+    const top = shares[0];
+    return (
+      <span className={cn("flex items-center gap-2", className)}>
+        <span aria-hidden className="flex h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-rule">
+          {shares.map((s, i) => (
+            <span key={s.name} className={colour(s, i)} style={{ width: `${s.percent}%` }} />
+          ))}
+        </span>
+        {top.name} {top.percent}%
+      </span>
+    );
+  }
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       <div aria-hidden className="flex h-1.5 overflow-hidden rounded-full bg-rule print:hidden">
@@ -19,7 +33,7 @@ export function LanguageBar({ shares, compact = false, className }: { shares: La
         ))}
       </div>
       <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-graphite">
-        {(compact ? shares.slice(0, 1) : shares).map((s, i) => (
+        {shares.map((s, i) => (
           <li key={s.name} className="flex items-center gap-1.5">
             <span aria-hidden className={cn("size-2 rounded-full print:hidden", colour(s, i))} />
             {s.name} {s.percent}%

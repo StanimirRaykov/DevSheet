@@ -46,9 +46,9 @@ export function ProjectRow({
       animate="animate"
       exit="exit"
       transition={presets.layout}
-      className={cn("flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4", selected && "bg-accent-soft/40")}
+      className={cn("flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-6", selected && "bg-accent-soft/40")}
     >
-      <div className="flex min-w-0 flex-1 items-start gap-3">
+      <div className="flex min-w-0 flex-1 items-start gap-4">
         <input
           type="checkbox"
           checked={selected}
@@ -56,7 +56,7 @@ export function ProjectRow({
           aria-label={`Select ${project.title}`}
           className="mt-1 size-4 shrink-0 cursor-pointer accent-accent"
         />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <button
               type="button"
@@ -68,9 +68,9 @@ export function ProjectRow({
             </button>
             {project.sourceMissing && <Badge tone="warning">Source missing</Badge>}
           </div>
-          {project.description && <p className="line-clamp-1 text-sm text-graphite">{project.description}</p>}
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-1 text-xs text-graphite">
-            {shares.length > 0 && <LanguageBar shares={shares} compact className="w-28" />}
+          {project.description && <p className="line-clamp-2 max-w-prose text-sm text-graphite">{project.description}</p>}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 pt-0.5 text-xs text-graphite">
+            {shares.length > 0 && <LanguageBar shares={shares} compact />}
             <span className="flex items-center gap-1 tabular-nums">
               <Star aria-hidden size={12} /> {project.stars}
               <span className="sr-only">{project.stars === 1 ? "star" : "stars"}</span>
@@ -79,7 +79,7 @@ export function ProjectRow({
           </div>
         </div>
       </div>
-      <div className="flex shrink-0 gap-2 pl-7 sm:pl-0">
+      <div className="flex shrink-0 gap-2 pl-8 sm:pl-0">
         {TAB_ACTIONS[tab].map((a) => (
           <Button key={a.label} size="sm" variant={a.variant} onClick={() => onMove(a.status)} aria-label={`${a.label} ${project.title}`}>
             {a.label}

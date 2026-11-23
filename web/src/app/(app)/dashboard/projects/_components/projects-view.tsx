@@ -173,8 +173,8 @@ export function ProjectsView() {
                 )}
                 {shown.length > 0 ? (
                   <Panel className="overflow-hidden">
-                    <div className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule bg-paper/50 px-4 py-2">
-                      <label className="flex cursor-pointer items-center gap-3 text-sm text-graphite">
+                    <div className="flex min-h-12 flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule bg-paper/50 px-5 py-2">
+                      <label className="flex cursor-pointer items-center gap-4 text-sm text-graphite">
                         <input
                           type="checkbox"
                           checked={allChosen}
@@ -239,8 +239,8 @@ function Toolbar({ query, onQuery, sort, onSort }: { query: string; onQuery: (q:
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="relative flex-1">
-        <Search aria-hidden size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-graphite" />
-        <Input type="search" value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Search by name or description" aria-label="Search projects" className="pl-9" />
+        <Search aria-hidden size={16} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-graphite" />
+        <Input type="search" value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Search by name or description" aria-label="Search projects" className="pl-10!" />
       </div>
       <label className="flex items-center gap-2 text-sm whitespace-nowrap text-graphite">
         Sort by
