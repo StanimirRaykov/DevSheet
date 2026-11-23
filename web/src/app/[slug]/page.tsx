@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { PublicPortfolio, SERVER_API, topLanguages } from "@/lib/api";
-import { formatRange } from "@/lib/dates";
+import { PublicPortfolio, SERVER_API } from "@/lib/api";
 import { publicPageTag } from "@/lib/public-page-tag";
-import { projectsLabel } from "@/lib/skills";
+import { Portfolio } from "./_components/portfolio";
 
 // Public pages read only stored data from our API and never call GitHub.
 // Cached for a minute and shared by the page and its metadata. null = no published page with this slug.
@@ -27,86 +26,17 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
   return { title: name, description: data.profile?.headline || `${name}'s projects and skills.` };
 }
 
-async function Portfolio({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const data = await loadPortfolio(slug);
+async function PortfolioPage({ params }: { params: Promise<{ slug: string }> }) {
+  const data = await loadPortfolio((await params).slug);
   if (!data) notFound();
-
-  return (
-    <>
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold">{data.profile?.fullName || data.displayName}</h1>
-        {data.profile?.headline && <p className="text-lg text-graphite">{data.profile.headline}</p>}
-        <p className="text-sm text-graphite">
-          {[data.profile?.location, data.profile?.email].filter(Boolean).join(" · ")}
-        </p>
-        {data.profile?.summary && <p className="whitespace-pre-line pt-2 text-ink">{data.profile.summary}</p>}
-      </header>
-      {data.skills.length > 0 && (
-        <section aria-labelledby="skills-heading" className="space-y-2">
-          <h2 id="skills-heading" className="text-xl font-semibold">Skills</h2>
-          <ul className="flex flex-wrap gap-2">
-            {data.skills.map((s) => (
-              <li key={s.name} title={s.projects.join(", ")} className="rounded-full border border-rule bg-sheet px-3 py-1 text-sm">
-                {s.name} <span className="text-graphite">· {projectsLabel(s.projects.length)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {data.experience.length > 0 && (
-        <section aria-labelledby="exp-heading" className="space-y-3">
-          <h2 id="exp-heading" className="text-xl font-semibold">Experience</h2>
-          <ul className="space-y-3">
-            {data.experience.map((x) => (
-              <li key={`${x.company}-${x.startDate}`}>
-                <p className="font-semibold">{x.title} · {x.company}</p>
-                <p className="text-xs text-graphite">{formatRange(x.startDate, x.endDate)}</p>
-                {x.description && <p className="whitespace-pre-line text-sm text-graphite">{x.description}</p>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {data.education.length > 0 && (
-        <section aria-labelledby="edu-heading" className="space-y-3">
-          <h2 id="edu-heading" className="text-xl font-semibold">Education</h2>
-          <ul className="space-y-2">
-            {data.education.map((x) => (
-              <li key={`${x.institution}-${x.startDate}`}>
-                <p className="font-semibold">{x.institution}{x.degree && ` · ${x.degree}`}</p>
-                <p className="text-xs text-graphite">{formatRange(x.startDate, x.endDate)}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      <h2 className="text-xl font-semibold">Projects</h2>
-      <ul className="grid gap-4 sm:grid-cols-2">
-        {data.projects.map((p) => (
-          <li key={p.url} className="rounded-panel border border-rule bg-sheet p-4">
-            <a href={p.url} className="font-semibold underline">{p.title}</a>
-            <p className="text-sm text-graphite">{p.description}</p>
-            <p className="mt-2 text-xs text-graphite">{topLanguages(p.languagesJson).join(" · ")} · ★ {p.stars}</p>
-            {p.skills.length > 0 && (
-              <ul className="mt-2 flex flex-wrap gap-1">
-                {p.skills.map((name) => (
-                  <li key={name} className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-900">{name}</li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
-      </ul>
-    </>
-  );
+  return <Portfolio data={data} />;
 }
 
-export default function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
+export default function PublicPage({ params }: PageProps<"/[slug]">) {
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-8">
-      <Suspense fallback={<p className="text-graphite">Loading…</p>}>
-        <Portfolio params={params} />
+    <main>
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <PortfolioPage params={params} />
       </Suspense>
     </main>
   );

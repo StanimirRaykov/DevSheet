@@ -38,6 +38,7 @@ export function ProfileForm({ initial }: { initial: ProfileData }) {
       <Field label="Summary" errors={errors.summary}><textarea rows={4} className={input} value={p.summary} onChange={(e) => set("summary", e.target.value)} /></Field>
       <Field label="Location" errors={errors.location}><input className={input} value={p.location} onChange={(e) => set("location", e.target.value)} /></Field>
       <Field label="Email" errors={errors.email}><input type="email" className={input} value={p.email} onChange={(e) => set("email", e.target.value)} /></Field>
+      <Field label="Website (optional, shown on your public page)" errors={errors.website}><input type="url" className={input} placeholder="https://" value={p.website} onChange={(e) => set("website", e.target.value)} /></Field>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={p.showLocationPublicly} onChange={(e) => set("showLocationPublicly", e.target.checked)} />
         Show location on my public page
