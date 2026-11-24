@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/coming-soon";
+import { CvView } from "./_components/cv-view";
 
 export const metadata: Metadata = { title: "CV" };
 
 export default function Page() {
-  return <ComingSoon title="CV" description="Preview each CV template before downloading it. Until then, download from Overview." />;
+  return <CvView />;
 }
