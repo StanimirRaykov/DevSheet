@@ -23,6 +23,43 @@ public class MeController(AppDbContext db, IGitHubSyncService sync, ProjectSkill
                 Github = u.GithubConnection == null ? null : new { u.GithubConnection.Login, u.GithubConnection.LastSyncedAt },
             }).FirstAsync());
 
+    /// <summary>
+    /// What the overview page shows, in one call: counts and flags about the caller's own data. Confirmed skills
+    /// count only those on visible projects (what the public page shows); suggested skills count each skill once.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> Summary()
+    {
+        var uid = Uid;
+        var user = await db.Users.Where(u => u.Id == uid).Select(u => new { u.IsPublished, u.Slug }).FirstAsync();
+        var profile = await db.Profiles.Where(p => p.UserId == uid).Select(p => new { p.Headline, p.Summary }).FirstOrDefaultAsync();
+        var byStatus = await db.Projects.Where(p => p.UserId == uid)
+            .GroupBy(p => p.Status).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync();
+        int Projects(ProjectStatus s) => byStatus.FirstOrDefault(x => x.Status == s)?.Count ?? 0;
+
+        var links = db.ProjectSkills.Where(l => l.Project!.UserId == uid);
+        var confirmedSkills = await links.Where(l => l.Status == LinkStatus.Confirmed && l.Project!.Status == ProjectStatus.Visible)
+            .Select(l => l.SkillId).Distinct().CountAsync();
+        var suggestedSkills = await links.Where(l => l.Status == LinkStatus.Suggested).Select(l => l.SkillId).Distinct().CountAsync();
+        var github = await db.GithubConnections.Where(c => c.UserId == uid).Select(c => new { c.Login, c.LastSyncedAt }).FirstOrDefaultAsync();
+
+        return Ok(new
+        {
+            user.IsPublished,
+            user.Slug,
+            HasHeadline = !string.IsNullOrWhiteSpace(profile?.Headline),
+            HasSummary = !string.IsNullOrWhiteSpace(profile?.Summary),
+            Experience = await db.WorkExperiences.CountAsync(x => x.UserId == uid),
+            Education = await db.Educations.CountAsync(x => x.UserId == uid),
+            Languages = await db.Languages.CountAsync(x => x.UserId == uid),
+            Certifications = await db.Certifications.CountAsync(x => x.UserId == uid),
+            Projects = new { Pending = Projects(ProjectStatus.Pending), Visible = Projects(ProjectStatus.Visible), Hidden = Projects(ProjectStatus.Hidden) },
+            ConfirmedSkills = confirmedSkills,
+            SuggestedSkills = suggestedSkills,
+            Github = github,
+        });
+    }
+
     [HttpPost("sync")]
     public async Task<IActionResult> Sync()
     {

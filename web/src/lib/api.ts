@@ -108,3 +108,21 @@ export interface Me {
   /** The GitHub account repos sync from; null when GitHub is not connected. */
   github: { login: string; lastSyncedAt: string | null } | null;
 }
+
+/** GET /api/me/summary: what the overview page shows, in one call. */
+export interface MeSummary {
+  isPublished: boolean;
+  slug: string;
+  hasHeadline: boolean;
+  hasSummary: boolean;
+  experience: number;
+  education: number;
+  languages: number;
+  certifications: number;
+  projects: { pending: number; visible: number; hidden: number };
+  /** Distinct skills confirmed on visible projects: the ones on the public page. */
+  confirmedSkills: number;
+  /** Distinct skills waiting for a yes or no. */
+  suggestedSkills: number;
+  github: { login: string; lastSyncedAt: string | null } | null;
+}
