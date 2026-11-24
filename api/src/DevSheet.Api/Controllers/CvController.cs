@@ -3,6 +3,7 @@ using DevSheet.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 
 namespace DevSheet.Api.Controllers;
 
@@ -11,9 +12,13 @@ public class CvController(CvDataService data, AppDbContext db) : ControllerBase
 {
     private Guid Uid => Guid.Parse(User.FindFirst(ExternalAuth.UserIdClaim)!.Value);
 
-    /// <summary>Download my CV as a PDF built from my confirmed data. template: modern (default) or europass (Europass-style, not an official Europass file).</summary>
+    /// <summary>
+    /// My CV as a PDF built from my confirmed data. template: modern (default) or europass (Europass-style, not an
+    /// official Europass file). inline=true asks the browser to show it (the preview) instead of saving it; only the
+    /// Content-Disposition header changes.
+    /// </summary>
     [HttpGet("cv.pdf")]
-    public async Task<IActionResult> Download([FromQuery] string template = "modern")
+    public async Task<IActionResult> Download([FromQuery] string template = "modern", [FromQuery] bool inline = false)
     {
         var name = template.ToLowerInvariant();
         if (name is not ("modern" or "europass"))
@@ -25,6 +30,11 @@ public class CvController(CvDataService data, AppDbContext db) : ControllerBase
         var slug = await db.Users.Where(u => u.Id == Uid).Select(u => u.Slug).FirstAsync();
         var bytes = name == "europass" ? EuropassStyleCvRenderer.Render(model) : ModernCvRenderer.Render(model);
         var suffix = name == "europass" ? "-cv-europass-style.pdf" : "-cv.pdf";
-        return File(bytes, "application/pdf", slug + suffix);
+        if (!inline) return File(bytes, "application/pdf", slug + suffix);
+
+        var disposition = new ContentDispositionHeaderValue("inline");
+        disposition.SetHttpFileName(slug + suffix);
+        Response.Headers.ContentDisposition = disposition.ToString();
+        return File(bytes, "application/pdf");
     }
 }
