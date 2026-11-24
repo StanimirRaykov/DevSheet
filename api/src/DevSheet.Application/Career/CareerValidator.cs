@@ -25,6 +25,11 @@ public static class CareerValidator
             else if (!IsEmail(email)) e.Add("email", "Must be a valid email address.");
         }
         CheckUrl(e, "website", i.Website);
+        var phone = i.Phone?.Trim() ?? "";
+        if (phone.Length > 0 && Countries.SplitPhone(phone) is null)
+            e.Add("phone", "Must be an international number starting with + and the country code, for example +359 88 123 4567.");
+        var country = i.CountryCode?.Trim() ?? "";
+        if (country.Length > 0 && Countries.Find(country) is null) e.Add("countryCode", "Choose a country from the list.");
         return e.Result;
     }
 

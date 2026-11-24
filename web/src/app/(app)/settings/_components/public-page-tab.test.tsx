@@ -91,7 +91,7 @@ describe("AddressForm", () => {
 });
 
 describe("Visibility", () => {
-  const page: PublicPage = { slug: "ana-petrova", isPublished: false, showEmail: false, showLocation: false, allowCvDownload: false };
+  const page: PublicPage = { slug: "ana-petrova", isPublished: false, showEmail: false, showLocation: false, showPhone: false, allowCvDownload: false };
 
   it("publishes at once with a toast and refreshes the cached page", async () => {
     answer = (_p, _m, body) => ok({ ...page, ...(body as object) });

@@ -111,7 +111,7 @@ public static class EuropassStyleCvRenderer
         {
             h.Item().Text(cv.Name).FontSize(22).Bold().FontColor(Blue);
             if (!string.IsNullOrWhiteSpace(cv.Headline)) h.Item().Text(cv.Headline).FontSize(12).FontColor(Muted);
-            var contact = new[] { cv.Email, cv.Location, cv.GithubUrl }.Where(s => !string.IsNullOrWhiteSpace(s));
+            var contact = new[] { cv.Email, cv.Phone, cv.Location, cv.GithubUrl }.Where(s => !string.IsNullOrWhiteSpace(s));
             h.Item().PaddingTop(2).Text(string.Join("  ·  ", contact)).FontSize(9).FontColor(Muted);
         });
     }

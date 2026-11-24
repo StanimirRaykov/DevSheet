@@ -31,6 +31,12 @@ describe("CvView", () => {
     expect(screen.getByLabelText("Loading the preview")).toBeInTheDocument();
   });
 
+  it("exports the official Europass file and says where to import it", () => {
+    render(<CvView />);
+    expect(screen.getByRole("link", { name: "Export for Europass" })).toHaveAttribute("href", expect.stringMatching(/\/api\/me\/cv\.xml$/));
+    expect(screen.getByRole("link", { name: /Europass CV editor/ })).toHaveAttribute("href", "https://europa.eu/europass/eportfolio/screen/cv-editor");
+  });
+
   it("lists what is included and links the empty parts to where they are fixed", async () => {
     render(<CvView />);
 

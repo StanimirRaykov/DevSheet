@@ -159,7 +159,7 @@ public class AccountSettingsApiTests(WebApplicationFactory<Program> factory) : I
     // ---- public page ----
 
     [Fact]
-    public async Task Public_page_settings_publish_and_show_email_and_location()
+    public async Task Public_page_settings_publish_and_show_email_location_and_phone()
     {
         var user = await NewUser("ana-page");
         var client = _api.Client(user.Id);
@@ -170,12 +170,15 @@ public class AccountSettingsApiTests(WebApplicationFactory<Program> factory) : I
 
         await client.PatchAsJsonAsync("/api/me/public-page", new { isPublished = true, showEmail = true });
         await client.PatchAsJsonAsync("/api/me/public-page", new { showLocation = true }); // leaves the others alone
+        Assert.False((await Json(await client.GetAsync("/api/me/public-page"))).GetProperty("showPhone").GetBoolean());
+        await client.PatchAsJsonAsync("/api/me/public-page", new { showPhone = true });
 
         var after = await Json(await client.GetAsync("/api/me/public-page"));
         Assert.Equal("ana-page", after.GetProperty("slug").GetString());
         Assert.True(after.GetProperty("isPublished").GetBoolean());
         Assert.True(after.GetProperty("showEmail").GetBoolean());
         Assert.True(after.GetProperty("showLocation").GetBoolean());
+        Assert.True(after.GetProperty("showPhone").GetBoolean());
     }
 
     // ---- delete ----

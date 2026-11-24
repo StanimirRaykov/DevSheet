@@ -1,15 +1,15 @@
 "use client";
 
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
-import { Button, Field, Input, Textarea, useToast } from "@/components/ui";
-import type { ProfileData } from "@/lib/api";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Button, Field, Input, Select, Textarea, useToast } from "@/components/ui";
+import type { Country, ProfileData } from "@/lib/api";
 import { LONG_MAX, checkAbout, type Errors } from "@/lib/career";
 import { send } from "@/lib/client";
 import { mapFieldErrors } from "@/lib/field-errors";
 import { focusFirstError } from "./item-dialog";
 import { Checkbox, counter } from "./sections";
 
-const FIELDS = ["fullName", "headline", "summary", "location", "email", "website"] as const;
+const FIELDS = ["fullName", "headline", "summary", "location", "countryCode", "email", "phone", "website"] as const;
 
 export const sameProfile = (a: ProfileData, b: ProfileData) =>
   (Object.keys(a) as (keyof ProfileData)[]).every((k) => a[k] === b[k]);
@@ -35,6 +35,8 @@ export function AboutForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const dirty = !sameProfile(saved, draft);
+  const countries = useCountries();
+  const dialing = Array.isArray(countries) ? countries.find((c) => c.code === draft.countryCode)?.dialing : undefined;
 
   function set<K extends keyof ProfileData>(key: K, value: ProfileData[K]) {
     onDraft({ ...draft, [key]: value });
@@ -89,16 +91,45 @@ export function AboutForm({
 
       <Group title="Contact" description="On your CV. On your public page only where you allow it.">
         <div className="flex flex-col gap-2.5">
-          <Field label="Location" hint="City and country is enough." error={errors.location}>
-            <Input value={draft.location} onChange={(e) => set("location", e.target.value)} autoComplete="address-level2" />
-          </Field>
-          <Checkbox checked={draft.showLocationPublicly} onChange={(v) => set("showLocationPublicly", v)}>Show my location on my public page</Checkbox>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="City" hint="Where you live or work from." error={errors.location}>
+              <Input value={draft.location} onChange={(e) => set("location", e.target.value)} autoComplete="address-level2" />
+            </Field>
+            <Field
+              label="Country"
+              hint={countries === "error" ? "The list of countries could not be loaded. Reload to try again." : "Shown after the city. The Europass export needs it to include your city."}
+              error={errors.countryCode}
+            >
+              <Select
+                value={draft.countryCode}
+                onChange={(e) => set("countryCode", e.target.value)}
+                disabled={countries === null || countries === "error"}
+                autoComplete="country"
+              >
+                <option value="">No country</option>
+                {Array.isArray(countries)
+                  ? countries.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)
+                  : draft.countryCode && <option value={draft.countryCode}>{draft.countryCode.toUpperCase()}</option>}
+              </Select>
+            </Field>
+          </div>
+          <Checkbox checked={draft.showLocationPublicly} onChange={(v) => set("showLocationPublicly", v)}>Show my city and country on my public page</Checkbox>
         </div>
         <div className="flex flex-col gap-2.5">
           <Field label="Email" hint="Not your sign-in email. Readers of your CV write here." error={errors.email}>
             <Input type="email" value={draft.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" />
           </Field>
           <Checkbox checked={draft.showEmailPublicly} onChange={(v) => set("showEmailPublicly", v)}>Show my email on my public page</Checkbox>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          <Field
+            label="Phone"
+            hint={`Optional. Start with + and the country code, for example ${dialing ? `+${dialing}` : "+359"} 88 123 4567.`}
+            error={errors.phone}
+          >
+            <Input type="tel" inputMode="tel" value={draft.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel" />
+          </Field>
+          <Checkbox checked={draft.showPhonePublicly} onChange={(v) => set("showPhonePublicly", v)}>Show my phone on my public page</Checkbox>
         </div>
         <Field label="Website" hint="Optional, a full https:// address. Shown on your public page." error={errors.website}>
           <Input type="url" inputMode="url" placeholder="https://" value={draft.website} onChange={(e) => set("website", e.target.value)} autoComplete="url" />
@@ -113,6 +144,19 @@ export function AboutForm({
       </div>
     </form>
   );
+}
+
+/** The country list, loaded once per form. null while loading. */
+function useCountries(): Country[] | null | "error" {
+  const [countries, setCountries] = useState<Country[] | null | "error">(null);
+  useEffect(() => {
+    let live = true;
+    send<Country[]>("/api/countries")
+      .then((r) => { if (live) setCountries(r.ok && r.data ? r.data : "error"); })
+      .catch(() => { if (live) setCountries("error"); });
+    return () => { live = false; };
+  }, []);
+  return countries;
 }
 
 function Group({ title, description, children }: { title: string; description: string; children: ReactNode }) {

@@ -54,10 +54,10 @@ export interface PublicPortfolio {
     skills: string[]; // confirmed only
   }[];
   skills: { name: string; category: string; projects: string[] }[]; // the matrix: skill -> projects, most used first
-  // email/location are null unless the owner opted in (or when empty)
+  // email/location/phone are null unless the owner opted in (or when empty); location includes the country
   profile: {
     fullName: string; headline: string; summary: string;
-    location: string | null; email: string | null; website: string | null;
+    location: string | null; email: string | null; website: string | null; phone: string | null;
   } | null;
   experience: { company: string; title: string; startDate: string; endDate: string | null; description: string }[];
   education: { institution: string; degree: string; startDate: string | null; endDate: string | null }[];
@@ -72,7 +72,14 @@ export interface PublicPortfolio {
 export interface ProfileData {
   fullName: string; headline: string; summary: string; location: string; email: string; website: string;
   showEmailPublicly: boolean; showLocationPublicly: boolean;
+  /** International form, "+359 88 123 4567"; empty when none. */
+  phone: string; showPhonePublicly: boolean;
+  /** ISO 3166-1 alpha-2, lower case; empty when none. */
+  countryCode: string;
 }
+
+/** From GET /api/countries, sorted by name. */
+export interface Country { code: string; name: string; dialing: string }
 export interface ExperienceItem {
   id: string; company: string; title: string; startDate: string; endDate: string | null; description: string;
 }

@@ -68,6 +68,9 @@ erDiagram
         boolean ShowEmailPublicly "opt-in, default false"
         boolean ShowLocationPublicly "opt-in, default false"
         text Website "shown on the public page"
+        text Phone "international, +359 ..."
+        text CountryCode "ISO 3166-1 alpha-2, lower case"
+        boolean ShowPhonePublicly "opt-in, default false"
         boolean AllowPublicCvDownload "opt-in, default false"
     }
     GithubRepos {
@@ -159,8 +162,8 @@ erDiagram
   later disappears from the repo.
 - **Skills are canonical.** `Skills` is a seeded list; `SkillAliases` maps alternative spellings and
   GitHub language names (e.g. `dockerfile`, `plpgsql`) to a skill. Skills are never created from raw GitHub strings.
-- **Privacy flags.** `Profiles.ShowEmailPublicly` and `ShowLocationPublicly` default to false; the public page
-  omits email and location unless the owner opts in. Name, headline and summary are public once the page is published.
+- **Privacy flags.** `Profiles.ShowEmailPublicly`, `ShowLocationPublicly` and `ShowPhonePublicly` default to false; the
+  public page and the public CV download omit email, location (with the country) and phone unless the owner opts in. Name, headline and summary are public once the page is published.
 - **Languages mirror Europass.** A foreign language is self-assessed in five skills, each an optional CEFR level stored as an
   integer (1 = A1 ... 6 = C2); a native language has no levels. See `docs/EUROPASS.md`.
 - **Accounts.** A user is a DevSheet account on its own. Each way to sign in is an `ExternalLogins` row, unique by

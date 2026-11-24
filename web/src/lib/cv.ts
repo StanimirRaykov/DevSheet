@@ -11,13 +11,21 @@ export interface CvTemplate {
 
 export const CV_TEMPLATES: CvTemplate[] = [
   { id: "modern", name: "Modern", format: "PDF", description: "One clean column with your projects up front. For most job applications." },
-  { id: "europass", name: "Europass-style", format: "PDF", description: "The European layout with the language grid. Not an official Europass file." },
+  { id: "europass", name: "Europass-style", format: "PDF", description: "The European layout with the language grid. A look-alike: for the official format, use the Europass export." },
 ];
 
 /** The download link (the browser saves the PDF) or, with preview, the same PDF shown in the browser. */
 export function cvUrl(template: CvTemplateId, { preview = false } = {}): string {
   return `${PUBLIC_API}/api/me/cv.pdf?template=${template}${preview ? "&inline=true" : ""}`;
 }
+
+/** The same CV as Europass XML, for the official Europass online editor. */
+export function europassXmlUrl(): string {
+  return `${PUBLIC_API}/api/me/cv.xml`;
+}
+
+/** Where the person imports the XML: the Europass CV editor (sign-in at Europass needed). */
+export const EUROPASS_EDITOR = "https://europa.eu/europass/eportfolio/screen/cv-editor";
 
 export interface IncludedRow {
   key: string;

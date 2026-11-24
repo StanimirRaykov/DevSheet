@@ -15,7 +15,7 @@ public record Result<T>(Outcome Outcome, T? Value = default, IReadOnlyDictionary
 }
 
 public record ProfileView(string FullName, string Headline, string Summary, string Location, string Email,
-    bool ShowEmailPublicly, bool ShowLocationPublicly, string Website);
+    bool ShowEmailPublicly, bool ShowLocationPublicly, string Website, string Phone, string CountryCode, bool ShowPhonePublicly);
 public record ExperienceView(Guid Id, string Company, string Title, DateOnly StartDate, DateOnly? EndDate, string Description);
 public record LanguageView(Guid Id, string Name, string? IsoCode, bool IsMotherTongue,
     CefrLevel? Listening, CefrLevel? Reading, CefrLevel? SpokenInteraction, CefrLevel? SpokenProduction, CefrLevel? Writing);
@@ -30,7 +30,7 @@ public class CareerService(AppDbContext db, TimeProvider? clock = null)
     public async Task<ProfileView> GetProfileAsync(Guid userId, CancellationToken ct = default)
     {
         var p = await db.Profiles.FirstOrDefaultAsync(x => x.UserId == userId, ct);
-        return p is null ? new ProfileView("", "", "", "", "", false, false, "") : ToView(p);
+        return p is null ? new ProfileView("", "", "", "", "", false, false, "", "", "", false) : ToView(p);
     }
 
     public async Task<Result<ProfileView>> UpsertProfileAsync(Guid userId, ProfileInput input, CancellationToken ct = default)
@@ -48,6 +48,9 @@ public class CareerService(AppDbContext db, TimeProvider? clock = null)
         p.ShowEmailPublicly = input.ShowEmailPublicly;
         p.ShowLocationPublicly = input.ShowLocationPublicly;
         p.Website = input.Website?.Trim() ?? "";
+        p.Phone = input.Phone?.Trim() ?? "";
+        p.CountryCode = input.CountryCode?.Trim().ToLowerInvariant() ?? "";
+        p.ShowPhonePublicly = input.ShowPhonePublicly;
         await db.SaveChangesAsync(ct);
         return Result<ProfileView>.Ok(ToView(p));
     }
@@ -246,7 +249,8 @@ public class CareerService(AppDbContext db, TimeProvider? clock = null)
         new(l.Id, l.Name, l.IsoCode, l.IsMotherTongue, l.Listening, l.Reading, l.SpokenInteraction, l.SpokenProduction, l.Writing);
     private static CertificationView ToView(Certification c) => new(c.Id, c.Name, c.Issuer, c.IssueDate, c.Url);
     private static ProfileView ToView(Profile p) =>
-        new(p.FullName, p.Headline, p.Summary, p.Location, p.Email, p.ShowEmailPublicly, p.ShowLocationPublicly, p.Website);
+        new(p.FullName, p.Headline, p.Summary, p.Location, p.Email, p.ShowEmailPublicly, p.ShowLocationPublicly, p.Website,
+            p.Phone, p.CountryCode, p.ShowPhonePublicly);
     private static ExperienceView ToView(WorkExperience w) => new(w.Id, w.Company, w.Title, w.StartDate, w.EndDate, w.Description);
     private static EducationView ToView(Education e) => new(e.Id, e.Institution, e.Degree, e.StartDate, e.EndDate);
 }

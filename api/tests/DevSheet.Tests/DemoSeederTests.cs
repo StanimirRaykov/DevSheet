@@ -74,7 +74,8 @@ public class DemoPublicPageTests(WebApplicationFactory<Program> factory) : IClas
         var page = await _api.Client().GetFromJsonAsync<JsonElement>("/api/public/demo");
 
         Assert.Equal("Ana Petrova", page.GetProperty("profile").GetProperty("fullName").GetString());
-        Assert.Equal("Plovdiv", page.GetProperty("profile").GetProperty("location").GetString());
+        Assert.Equal("Plovdiv, Bulgaria", page.GetProperty("profile").GetProperty("location").GetString());
+        Assert.Equal(JsonValueKind.Null, page.GetProperty("profile").GetProperty("phone").ValueKind);
         Assert.Equal(JsonValueKind.Null, page.GetProperty("profile").GetProperty("email").ValueKind);
         Assert.Equal(JsonValueKind.Null, page.GetProperty("githubLogin").ValueKind);
         Assert.Equal(3, page.GetProperty("projects").GetArrayLength());

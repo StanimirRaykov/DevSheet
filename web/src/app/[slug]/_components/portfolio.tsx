@@ -1,4 +1,4 @@
-import { Download, Globe, Mail, MapPin, Star } from "lucide-react";
+import { Download, Globe, Mail, MapPin, Phone, Star } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { GithubMark } from "@/components/github-mark";
@@ -157,6 +157,7 @@ function Header({ data, name }: { data: PublicPortfolio; name: string }) {
   const contact: { key: string; icon: ReactNode; label: string; href?: string }[] = [];
   if (p?.location) contact.push({ key: "location", icon: <MapPin size={16} />, label: p.location });
   if (p?.email) contact.push({ key: "email", icon: <Mail size={16} />, label: p.email, href: `mailto:${p.email}` });
+  if (p?.phone) contact.push({ key: "phone", icon: <Phone size={16} />, label: p.phone, href: `tel:${p.phone.replace(/[^\d+]/g, "")}` });
   if (data.githubLogin)
     contact.push({ key: "github", icon: <GithubMark size={16} />, label: `github.com/${data.githubLogin}`, href: `https://github.com/${data.githubLogin}` });
   if (p?.website) contact.push({ key: "website", icon: <Globe size={16} />, label: displayUrl(p.website), href: p.website });

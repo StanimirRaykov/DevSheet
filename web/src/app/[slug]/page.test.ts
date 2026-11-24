@@ -24,7 +24,7 @@ describe("public page metadata", () => {
   it("names the person and uses the headline for the share card", async () => {
     portfolio = {
       displayName: "ana", avatarUrl: null, githubLogin: null, slug: "ana-petrova", cvDownload: false,
-      profile: { fullName: "Ana Petrova", headline: "Backend developer", summary: "", location: null, email: null, website: null },
+      profile: { fullName: "Ana Petrova", headline: "Backend developer", summary: "", location: null, email: null, website: null, phone: null },
       projects: [], skills: [], experience: [], education: [], languages: [], certifications: [],
     };
 
