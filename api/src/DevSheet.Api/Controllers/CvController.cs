@@ -37,4 +37,17 @@ public class CvController(CvDataService data, AppDbContext db) : ControllerBase
         Response.Headers.ContentDisposition = disposition.ToString();
         return File(bytes, "application/pdf");
     }
+
+    /// <summary>
+    /// My CV as Europass XML, the file the Europass online editor imports (europa.eu/europass, "Create a CV",
+    /// upload). Same data and privacy rules as the PDFs.
+    /// </summary>
+    [HttpGet("cv.xml")]
+    public async Task<IActionResult> Europass()
+    {
+        var model = await data.BuildAsync(Uid);
+        if (model is null) return NotFound();
+        var slug = await db.Users.Where(u => u.Id == Uid).Select(u => u.Slug).FirstAsync();
+        return File(EuropassXmlExporter.Export(model), "application/xml", slug + "-cv-europass.xml");
+    }
 }

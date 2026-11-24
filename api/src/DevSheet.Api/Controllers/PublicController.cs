@@ -1,3 +1,4 @@
+using DevSheet.Application.Cv;
 using DevSheet.Application.Skills;
 using DevSheet.Domain.Entities;
 using DevSheet.Infrastructure.Career;
@@ -37,14 +38,16 @@ public class PublicController(AppDbContext db, CvDataService cv) : ControllerBas
 
         var matrix = SkillMatrix.Build(projects.Select(p => (p.Title, (IEnumerable<string>)p.Skills)));
 
-        // Privacy: email and location are public only when the owner opted in. Names/headline/summary
+        // Privacy: email, location (with the country) and phone are public only when the owner opted in. Names/headline/summary
         // are public once the page is published.
         var p = u.Profile;
+        var place = p is null ? "" : CvFormat.Place(p.Location, p.CountryCode);
         object? profile = p is null ? null : new
         {
             p.FullName, p.Headline, p.Summary,
-            Location = p.ShowLocationPublicly && p.Location.Length > 0 ? p.Location : null,
+            Location = p.ShowLocationPublicly && place.Length > 0 ? place : null,
             Email = p.ShowEmailPublicly && p.Email.Length > 0 ? p.Email : null,
+            Phone = p.ShowPhonePublicly && p.Phone.Length > 0 ? p.Phone : null,
             Website = p.Website.Length > 0 ? p.Website : null,
         };
         var experience = await db.WorkExperiences.Where(w => w.UserId == u.Id).NewestFirst()

@@ -1,12 +1,12 @@
 "use client";
 
-import { Check, CircleAlert, Download, ExternalLink } from "lucide-react";
+import { Check, CircleAlert, Download, ExternalLink, FileCode } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button, Panel, Skeleton, buttonClasses, cn } from "@/components/ui";
 import type { MeSummary } from "@/lib/api";
 import { send } from "@/lib/client";
-import { CV_TEMPLATES, cvGaps, cvIncluded, cvUrl, type CvTemplateId } from "@/lib/cv";
+import { CV_TEMPLATES, EUROPASS_EDITOR, cvGaps, cvIncluded, cvUrl, europassXmlUrl, type CvTemplateId } from "@/lib/cv";
 
 /**
  * Choose a template, see it as it will be downloaded, check what it contains. The preview is the real PDF from
@@ -73,6 +73,8 @@ export function CvView() {
             </a>
           </section>
 
+          <EuropassExport />
+
           <Included summary={summary} onRetry={() => { setSummary(null); load(); }} />
         </div>
 
@@ -97,6 +99,33 @@ function Preview({ template, name }: { template: CvTemplateId; name: string }) {
       </a>
       {/* Keyed by template: a new frame, with its loading state, for each choice. */}
       <PdfFrame key={template} src={cvUrl(template, { preview: true })} title={`${name} CV preview`} />
+    </section>
+  );
+}
+
+/** The official Europass format: a file to import into the Europass editor, not something DevSheet renders. */
+function EuropassExport() {
+  return (
+    <section aria-labelledby="cv-europass" className="flex flex-col gap-3">
+      <h2 id="cv-europass" className="font-serif text-lg text-ink">Europass</h2>
+      <p className="text-sm text-graphite">
+        The same CV as a Europass file. Import it in the official Europass editor to use their templates or apply
+        where a Europass CV is asked for.
+      </p>
+      <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm text-graphite marker:text-graphite">
+        <li>Export the file.</li>
+        <li>
+          Open the{" "}
+          <a href={EUROPASS_EDITOR} target="_blank" rel="noopener" className="text-ink underline underline-offset-2 hover:decoration-accent">
+            Europass CV editor<span className="sr-only"> (opens in a new tab)</span>
+          </a>{" "}
+          and choose to upload an existing CV.
+        </li>
+        <li>Give the CV a name there (Europass always asks for one) and check the sections. Projects and certifications arrive as custom sections.</li>
+      </ol>
+      <a href={europassXmlUrl()} className={buttonClasses("secondary", "md", "self-start")}>
+        <FileCode aria-hidden size={16} /> Export for Europass
+      </a>
     </section>
   );
 }

@@ -58,12 +58,21 @@ describe("form checks", () => {
   });
 
   it("checks lengths, email and links on the about form", () => {
-    const about = { fullName: "", headline: "", summary: "x".repeat(2001), location: "", email: "ana@", website: "ftp://x.dev", showEmailPublicly: false, showLocationPublicly: false };
+    const about = { fullName: "", headline: "", summary: "x".repeat(2001), location: "", email: "ana@", website: "ftp://x.dev", showEmailPublicly: false, showLocationPublicly: false, phone: "", showPhonePublicly: false, countryCode: "" };
     expect(checkAbout(about)).toEqual({
       summary: "Must be at most 2000 characters.",
       email: "Must be a valid email address, like ana@example.com.",
       website: "Must be a full http:// or https:// address.",
     });
+  });
+
+  it("asks for an international phone number", () => {
+    const about = { fullName: "", headline: "", summary: "", location: "", email: "", website: "", showEmailPublicly: false, showLocationPublicly: false, phone: "", showPhonePublicly: false, countryCode: "" };
+    const msg = "Must be an international number starting with + and the country code, for example +359 88 123 4567.";
+    expect(checkAbout({ ...about, phone: "0888 123 456" })).toEqual({ phone: msg });
+    expect(checkAbout({ ...about, phone: "+359 88" })).toEqual({ phone: msg });
+    expect(checkAbout({ ...about, phone: "+359 88 123 4567" })).toEqual({});
+    expect(checkAbout(about)).toEqual({});
   });
 
   it("checks the language code", () => {

@@ -93,7 +93,7 @@ public static class ModernCvRenderer
         if (!string.IsNullOrWhiteSpace(cv.Headline))
             col.Item().Text(cv.Headline).FontSize(12).FontColor(Muted);
 
-        var contact = new[] { cv.Email, cv.Location, cv.GithubUrl }.Where(s => !string.IsNullOrWhiteSpace(s));
+        var contact = new[] { cv.Email, cv.Phone, cv.Location, cv.GithubUrl }.Where(s => !string.IsNullOrWhiteSpace(s));
         col.Item().Text(string.Join("  ·  ", contact)).FontSize(9).FontColor(Muted);
     }
 

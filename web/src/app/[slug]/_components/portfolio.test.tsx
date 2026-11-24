@@ -9,7 +9,7 @@ const base: PublicPortfolio = {
   githubLogin: "ana-gh",
   slug: "ana-petrova",
   cvDownload: false,
-  profile: { fullName: "Ana Petrova", headline: "Backend developer", summary: "I build APIs.", location: null, email: null, website: null },
+  profile: { fullName: "Ana Petrova", headline: "Backend developer", summary: "I build APIs.", location: null, email: null, website: null, phone: null },
   projects: [
     { title: "ledger-api", description: "Bookkeeping API", url: "https://github.com/ana/ledger-api", stars: 14, languagesJson: '{"C#":90,"PLpgSQL":10}', skills: ["C#"] },
     { title: "trail-maps", description: null, url: "https://github.com/ana/trail-maps", stars: 0, languagesJson: '{"TypeScript":1}', skills: ["TypeScript"] },
@@ -37,6 +37,11 @@ describe("Portfolio", () => {
     expect(screen.getByRole("link", { name: "ana@example.com" })).toHaveAttribute("href", "mailto:ana@example.com");
     expect(screen.getByText("Plovdiv")).toBeVisible();
     expect(screen.getByRole("link", { name: "ana.dev" })).toHaveAttribute("href", "https://www.ana.dev/");
+  });
+
+  it("links the phone for calling when the owner shows it", () => {
+    render(<Portfolio data={{ ...base, profile: { ...base.profile!, phone: "+359 88 123 4567" } }} />);
+    expect(screen.getByRole("link", { name: "+359 88 123 4567" })).toHaveAttribute("href", "tel:+359881234567");
   });
 
   it("offers the CV only when the owner turned the download on", () => {

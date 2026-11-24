@@ -14,6 +14,7 @@ export interface PublicPage {
   isPublished: boolean;
   showEmail: boolean;
   showLocation: boolean;
+  showPhone: boolean;
   allowCvDownload: boolean;
 }
 
@@ -151,7 +152,7 @@ export function Visibility({ page, onChange }: { page: PublicPage; onChange: (pa
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
-  async function update(change: Partial<Pick<PublicPage, "isPublished" | "showEmail" | "showLocation" | "allowCvDownload">>, done: string) {
+  async function update(change: Partial<Pick<PublicPage, "isPublished" | "showEmail" | "showLocation" | "showPhone" | "allowCvDownload">>, done: string) {
     setBusy(true);
     const r = await send<PublicPage>("/api/me/public-page", "PATCH", change);
     setBusy(false);
@@ -165,7 +166,7 @@ export function Visibility({ page, onChange }: { page: PublicPage; onChange: (pa
   }
 
   return (
-    <SettingsSection title="Visibility" description="Nothing is public until you publish. Email and location stay hidden unless you show them.">
+    <SettingsSection title="Visibility" description="Nothing is public until you publish. Email, location and phone stay hidden unless you show them.">
       <div className="flex max-w-md flex-col gap-5">
         <Switch
           label="Published"
@@ -183,14 +184,21 @@ export function Visibility({ page, onChange }: { page: PublicPage; onChange: (pa
         />
         <Switch
           label="Show location"
-          description="The location from your profile."
+          description="The location and country from your profile."
           checked={page.showLocation}
           disabled={busy}
           onCheckedChange={(v) => update({ showLocation: v }, v ? "Location shown on your page" : "Location hidden from your page")}
         />
         <Switch
+          label="Show phone"
+          description="The phone number from your profile."
+          checked={page.showPhone}
+          disabled={busy}
+          onCheckedChange={(v) => update({ showPhone: v }, v ? "Phone shown on your page" : "Phone hidden from your page")}
+        />
+        <Switch
           label="CV download"
-          description="A Download CV button on your page. The CV follows the email and location switches above."
+          description="A Download CV button on your page. The CV follows the email, location and phone switches above."
           checked={page.allowCvDownload}
           disabled={busy}
           onCheckedChange={(v) => update({ allowCvDownload: v }, v ? "CV download turned on" : "CV download turned off")}

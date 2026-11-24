@@ -24,6 +24,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Unofficial Europass XSD (CC-BY-4.0, see Europass/NOTICE.md), used to validate the XML export. -->
+    <None Include="Europass\*.xsd" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\DevSheet.Api\DevSheet.Api.csproj" />
     <ProjectReference Include="..\..\src\DevSheet.Infrastructure\DevSheet.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\DevSheet.Application\DevSheet.Application.csproj" />

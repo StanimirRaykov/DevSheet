@@ -22,7 +22,7 @@ const bad = (body: unknown): SendResult<unknown> => ({ ok: false, status: 400, d
 
 const profile: ProfileData = {
   fullName: "Ana Petrova", headline: "Backend developer", summary: "", location: "Sofia", email: "ana@example.com",
-  website: "", showEmailPublicly: false, showLocationPublicly: true,
+  website: "", showEmailPublicly: false, showLocationPublicly: true, phone: "", showPhonePublicly: false, countryCode: "",
 };
 
 vi.mock("@/lib/client", () => ({

@@ -246,6 +246,10 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.Property<bool>("AllowPublicCvDownload")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
@@ -262,10 +266,17 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("ShowEmailPublicly")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("ShowLocationPublicly")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("ShowPhonePublicly")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Summary")

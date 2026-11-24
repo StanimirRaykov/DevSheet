@@ -1,3 +1,4 @@
+using DevSheet.Application.Career;
 using DevSheet.Application.Cv;
 using DevSheet.Application.Skills;
 using DevSheet.Domain.Entities;
@@ -14,8 +15,8 @@ public class CvDataService(AppDbContext db)
     public const int MaxProjects = 8;
 
     /// <param name="forVisitor">
-    /// Built for someone other than the owner (the public download): email and location only when the owner shows
-    /// them on the public page.
+    /// Built for someone other than the owner (the public download): email, location (with the country) and phone only
+    /// when the owner shows them on the public page.
     /// </param>
     public async Task<CvModel?> BuildAsync(Guid userId, bool forVisitor = false, CancellationToken ct = default)
     {
@@ -46,11 +47,13 @@ public class CvDataService(AppDbContext db)
         var languages = await db.Languages.Where(l => l.UserId == userId).Ordered().ToListAsync(ct);
         var certifications = await db.Certifications.Where(c => c.UserId == userId).NewestFirst().ToListAsync(ct);
 
+        var showLocation = !forVisitor || profile?.ShowLocationPublicly == true;
+        var showPhone = !forVisitor || profile?.ShowPhonePublicly == true;
         var name = string.IsNullOrWhiteSpace(profile?.FullName) ? user.DisplayName : profile!.FullName;
         return new CvModel(
             name, profile?.Headline ?? "", profile?.Summary ?? "",
             forVisitor && profile?.ShowEmailPublicly != true ? "" : profile?.Email ?? "",
-            forVisitor && profile?.ShowLocationPublicly != true ? "" : profile?.Location ?? "",
+            showLocation ? CvFormat.Place(profile?.Location, profile?.CountryCode) : "",
             user.GithubConnection is { } gh ? $"github.com/{gh.Login}" : "",
             skills,
             experience.Select(w => new CvExperience(w.Title, w.Company, w.StartDate, w.EndDate, w.Description)).ToList(),
@@ -58,7 +61,10 @@ public class CvDataService(AppDbContext db)
             projects.Take(MaxProjects).Select(p => new CvProject(p.Title, p.Description, p.Url, p.Skills.ToList())).ToList())
         {
             Languages = languages.Select(l => new CvLanguage(l.Name, l.IsMotherTongue,
-                l.Listening, l.Reading, l.SpokenInteraction, l.SpokenProduction, l.Writing)).ToList(),
+                l.Listening, l.Reading, l.SpokenInteraction, l.SpokenProduction, l.Writing) { IsoCode = l.IsoCode }).ToList(),
+            Phone = showPhone ? profile?.Phone ?? "" : "",
+            CountryCode = showLocation && Countries.Find(profile?.CountryCode) is { } country ? country.Code : "",
+            City = showLocation ? profile?.Location.Trim() ?? "" : "",
             Certifications = certifications.Select(c => new CvCertification(c.Name, c.Issuer, c.IssueDate, c.Url)).ToList(),
         };
     }

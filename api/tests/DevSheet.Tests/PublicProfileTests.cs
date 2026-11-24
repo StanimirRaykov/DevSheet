@@ -50,6 +50,26 @@ public class PublicProfileTests
     }
 
     [Fact]
+    public void Phone_and_country_appear_only_when_the_owner_opts_in()
+    {
+        using var t = new TestDb();
+        var u = t.AddUser("phoebe", published: true);
+        var svc = new CareerService(t.Db);
+        ProfileInput Input(bool showPhone, bool showLocation) => new("Ana Petrova", "", "", "Sofia", "", false, showLocation,
+            Phone: "+359 88 123 4567", CountryCode: "bg", ShowPhonePublicly: showPhone);
+
+        svc.UpsertProfileAsync(u.Id, Input(showPhone: false, showLocation: false)).GetAwaiter().GetResult();
+        var hidden = Get(t, "phoebe").GetRawText();
+        Assert.DoesNotContain("123 4567", hidden);
+        Assert.DoesNotContain("Bulgaria", hidden);
+
+        svc.UpsertProfileAsync(u.Id, Input(showPhone: true, showLocation: true)).GetAwaiter().GetResult();
+        var profile = Get(t, "phoebe").GetProperty("profile");
+        Assert.Equal("+359 88 123 4567", profile.GetProperty("phone").GetString());
+        Assert.Equal("Sofia, Bulgaria", profile.GetProperty("location").GetString());
+    }
+
+    [Fact]
     public void Experience_and_education_are_listed_with_current_role_first()
     {
         using var t = new TestDb();

@@ -47,7 +47,55 @@ old format and are not what we need.
 - The old [github.com/europass](https://github.com/europass) organisation has parsers and samples for the old format
   (`europasscv-parser-js`, `sample-tools-java`, `sample-tools-php`, REST examples); none is described as containing the 2020 XSD.
 
-## How the 2020 schema models our data (from the v3.0.0 documentation; verify against the XSD)
+## Final mapping (issue #25, built 2026-11-24)
+
+`GET /api/me/cv.xml` (login required) returns `<slug>-cv-europass.xml`, built by `EuropassXmlExporter` from the same
+privacy-filtered `CvModel` as the PDFs: only visible projects and confirmed skills, never another user's data. The
+dashboard's CV page has an "Export for Europass" button with the steps to import it.
+
+| Europass element | DevSheet source | Notes |
+| --- | --- | --- |
+| `CandidatePerson/PersonName` (`oa:GivenName`, `hr:FamilyName`) | `Profile.FullName` (or the display name) | **Split at the first space**: "Maria de la Cruz" -> Maria / de la Cruz. One word: the family name stays empty and is fixed in the editor. No database change |
+| `Communication` Email | `Profile.Email` | |
+| `Communication` Telephone (`UseCode` mobile, `CountryDialing`, `oa:DialNumber`, `CountryCode`) | `Profile.Phone` (new), `Profile.CountryCode` | Stored in international form (`+359 88 123 4567`). The calling code is found from the country list (`Countries`), so `CountryDialing` (mandatory for the importer) is always a real code. `CountryCode` is always written too (the profile country when its calling code matches, else the code's owner): without it the editor flags "Should be valid prefix". A number that does not split is left out |
+| `Communication` Web | GitHub connection | `https://github.com/<login>` |
+| `Communication` Address (`oa:CityName`, `CountryCode`) | `Profile.Location` (city), `Profile.CountryCode` (new) | ISO 3166-1 alpha-2, lower case. **Written only when there is a country**: a city without a country crashes the live importer (HTTP 500, empty body) |
+| `PrimaryLanguageCode` | native languages | ISO 639-1 (`bg`) -> ISO 639-2 (`bul`) through .NET culture data; unknown or missing code: `name="FREE_TEXT"` with the language name |
+| `hr:ExecutiveSummary` | headline (bold) + summary | Escaped HTML; blank lines are paragraphs |
+| `EmploymentHistory/EmployerHistory` | work experience | One per position, `YYYY-MM` dates, `CurrentIndicator` true without an end date. Always an empty `OrganizationContact/Communication/Address`: the editor's preview reads the company address without a null check and stops drawing the CV at the first job without one |
+| `EducationHistory/EducationOrganizationAttendance` | education | `Ongoing` true when there is a start and no end (same reading as the PDFs). No EQF level or field of study: not stored, optional in Europass |
+| `PersonQualifications/PersonCompetency` | foreign languages | Five dimensions; DevSheet's single `Writing` level is `CEF-Writing-Production` (the editor has no writing-interaction skill) |
+| `Skills/PersonCompetency` (`Digital_Skill`) | confirmed skills | Duplicates (case-insensitive) dropped: the editor rejects them |
+| `Others` "Projects" | visible projects | One `Others` per entry (the importer keeps one entry per `Others` and merges equal titles). Description, confirmed skills, repository link |
+| `Others` "Certifications" | certifications | The `Certifications` element is ignored by the importer, so a custom section. Issue month as start date, issuer, link |
+| `RenderingInformation/Design/SectionsOrder` | sections that have content | Without it the editor shows only personal data |
+| `CandidateProfile/@languageCode` | `en` | DevSheet's texts are English |
+
+**Privacy.** Phone has its own opt-in (`ShowPhonePublicly`); the country goes with the location switch. The owner's own
+exports (PDF and XML) always include them; the public page and the visitor CV download only when switched on.
+
+**Validation.** `api/tests/DevSheet.Tests/Europass/` holds a copy of the unofficial XSD (CC-BY-4.0, credit in
+`NOTICE.md` there). `EuropassXmlTests` validates the exported bytes for a full CV, a CV with only a name and a CV without
+any name, and checks Cyrillic, escaping of user markup, free-text languages, duplicate skills and the phone split.
+
+**Checked against the live importer (2026-11-24, fictional data only).** Files were posted from the editor page
+itself (its own CSRF token) to `api/eprofile/europass-cv`, changing one thing at a time:
+
+| Variant | Result |
+| --- | --- |
+| Home address with a city and no country | **HTTP 500, empty body** ("The file is not Europass compliant"). Fixed: no address without a country |
+| Home address with a country (with or without city), or no address | 200, no errors |
+| Telephone without `CountryCode` | 200 with "Should be valid prefix". Fixed: the country is always written |
+| Job without `OrganizationContact` | Imports, but the **preview stops after the "Work experience" heading** (the preview code reads `organisationAddress.addressPart1` unguarded). Fixed: an empty `Address` imports as an address with no fields |
+| Schools without `OrganizationContact`, no `hr:ID`, `encoding="utf-8"` in lower case, custom entry without a description | Not the cause: 200 once the address was fixed |
+
+**Document name.** After an import the editor asks for the CV's name ("firstname_lastname_cv"). That is the title
+of the document in the Europass account, not the person's name: the import response has no field for it (the
+uploaded file name is not used either), so it cannot be set from the XML.
+
+**Still manual (project owner):** upload an export made from fictional data to the live editor and record the result.
+
+## Research notes: how the 2020 documentation models our data (superseded by the final mapping above)
 
 | Europass2 element | DevSheet today | Gap |
 |---|---|---|

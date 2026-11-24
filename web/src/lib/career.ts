@@ -89,6 +89,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export interface AboutForm {
   fullName: string; headline: string; summary: string; location: string; email: string; website: string;
   showEmailPublicly: boolean; showLocationPublicly: boolean;
+  phone: string; showPhonePublicly: boolean; countryCode: string;
 }
 
 export function checkAbout(f: AboutForm): Errors {
@@ -101,6 +102,11 @@ export function checkAbout(f: AboutForm): Errors {
   if (email.length > EMAIL_MAX) e.email = `Must be at most ${EMAIL_MAX} characters.`;
   else if (email && !EMAIL.test(email)) e.email = "Must be a valid email address, like ana@example.com.";
   url(e, "website", f.website);
+  const phone = f.phone.trim();
+  const digits = phone.replace(/\D/g, "").length;
+  // The server also checks the country calling code against its list.
+  if (phone && (!/^\+[0-9][0-9 ()./-]*$/.test(phone) || digits < 8 || digits > 15))
+    e.phone = "Must be an international number starting with + and the country code, for example +359 88 123 4567.";
   return e;
 }
 

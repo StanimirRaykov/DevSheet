@@ -30,6 +30,7 @@ public static class DemoSeeder
             Headline = "Backend developer",
             Summary = "I build APIs and the tools around them. Recently: a double-entry ledger and a hiking map for Rhodope trails.",
             Location = "Plovdiv",
+            CountryCode = "bg",
             ShowLocationPublicly = true,
             Email = "ana.petrova@example.com", // stays private: ShowEmailPublicly is false
         });
