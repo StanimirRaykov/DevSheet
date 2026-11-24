@@ -20,6 +20,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddTestingServices(builder.Environment, builder.Configuration); // Testing environment only
 builder.Services.AddDevSheetDataProtection(builder.Configuration);
 // GET /health: 200 when the API can reach its database, 503 otherwise (used by the Docker health check).
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
@@ -118,6 +119,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapTestingEndpoints(); // Testing environment only
 app.MapHealthChecks("/health");
 app.Run();
 
