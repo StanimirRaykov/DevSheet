@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Portfolio } from "./_components/portfolio";
+import { PortfolioSkeleton } from "./_components/portfolio-skeleton";
 import { loadPortfolio } from "./load-portfolio";
 
 export async function generateMetadata({ params }: PageProps<"/[slug]">): Promise<Metadata> {
@@ -31,7 +32,7 @@ async function PortfolioPage({ params }: { params: Promise<{ slug: string }> }) 
 export default function PublicPage({ params }: PageProps<"/[slug]">) {
   return (
     <main>
-      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+      <Suspense fallback={<PortfolioSkeleton />}>
         <PortfolioPage params={params} />
       </Suspense>
     </main>
