@@ -7,6 +7,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+    public DbSet<PasswordLogin> PasswordLogins => Set<PasswordLogin>();
+    public DbSet<AccountToken> AccountTokens => Set<AccountToken>();
     public DbSet<GithubConnection> GithubConnections => Set<GithubConnection>();
     public DbSet<Profile> Profiles => Set<Profile>();
     public DbSet<GithubRepo> GithubRepos => Set<GithubRepo>();
@@ -24,6 +26,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<User>(e =>
         {
             e.HasIndex(x => x.Slug).IsUnique();
+            e.Property(x => x.SecurityStamp).HasMaxLength(64);
+            e.HasOne(x => x.PasswordLogin).WithOne().HasForeignKey<PasswordLogin>(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Logins).WithOne(l => l.User).HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.GithubConnection).WithOne().HasForeignKey<GithubConnection>(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Profile).WithOne().HasForeignKey<Profile>(p => p.UserId);
@@ -38,6 +42,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.Property(x => x.Provider).HasMaxLength(20);
             e.HasIndex(x => new { x.Provider, x.ProviderKey }).IsUnique();
+        });
+        b.Entity<PasswordLogin>(e =>
+        {
+            e.HasKey(x => x.UserId);
+            e.Property(x => x.Email).HasMaxLength(254);
+            e.Property(x => x.NormalizedEmail).HasMaxLength(254);
+            e.HasIndex(x => x.NormalizedEmail).IsUnique();
+        });
+        b.Entity<AccountToken>(e =>
+        {
+            e.Property(x => x.Purpose).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.TokenHash).HasMaxLength(64);
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.Purpose });
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
         b.Entity<GithubConnection>(e =>
         {

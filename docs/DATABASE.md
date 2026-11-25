@@ -16,7 +16,9 @@ capitalized, e.g. `SELECT * FROM "Users";`.
 
 ```mermaid
 erDiagram
-    Users ||--|{ ExternalLogins : "signs in with"
+    Users ||--o| PasswordLogins : "signs in with"
+    Users ||--o{ ExternalLogins : "signs in with"
+    Users ||--o{ AccountTokens : "emailed links"
     Users ||--o| GithubConnections : "syncs from"
     Users ||--o| Profiles : has
     Users ||--o{ GithubRepos : "synced from GitHub"
@@ -40,11 +42,30 @@ erDiagram
         timestamptz CreatedAt
         timestamptz OnboardingCompletedAt "null until the welcome flow is finished or skipped"
         integer OnboardingStep "welcome step last reached"
+        varchar SecurityStamp "in the cookie; changed to sign out other sessions"
+    }
+    PasswordLogins {
+        uuid UserId PK,FK
+        varchar Email
+        varchar NormalizedEmail UK "trimmed, upper case"
+        text PasswordHash "PBKDF2 (ASP.NET Core PasswordHasher)"
+        timestamptz EmailConfirmedAt "null: cannot sign in yet"
+        timestamptz CreatedAt
+        timestamptz PasswordChangedAt
+    }
+    AccountTokens {
+        uuid Id PK
+        uuid UserId FK
+        varchar Purpose "ConfirmEmail | ResetPassword"
+        varchar TokenHash UK "SHA-256; the token is only in the email"
+        timestamptz CreatedAt
+        timestamptz ExpiresAt
+        timestamptz UsedAt "used, or replaced by a newer one"
     }
     ExternalLogins {
         uuid Id PK
         uuid UserId FK
-        varchar Provider "github | google | apple"
+        varchar Provider "google | apple"
         text ProviderKey "provider's stable user id"
         text Email
         timestamptz CreatedAt
@@ -166,10 +187,16 @@ erDiagram
   public page and the public CV download omit email, location (with the country) and phone unless the owner opts in. Name, headline and summary are public once the page is published.
 - **Languages mirror Europass.** A foreign language is self-assessed in five skills, each an optional CEFR level stored as an
   integer (1 = A1 ... 6 = C2); a native language has no levels. See `docs/EUROPASS.md`.
-- **Accounts.** A user is a DevSheet account on its own. Each way to sign in is an `ExternalLogins` row, unique by
-  (`Provider`, `ProviderKey`); the key is the provider's stable user id, never the email. Accounts are **never matched
-  by email**: a Google sign-in with the same email as a GitHub account makes a separate account (linking a second
-  provider happens only while signed in). Signing in with GitHub creates both a login and a `GithubConnections` row.
+- **Accounts.** A user is a DevSheet account on its own. It signs in with email and password (`PasswordLogins`, 0 or 1,
+  unique by normalised email) and/or with providers (`ExternalLogins`, unique by (`Provider`, `ProviderKey`); the key is
+  the provider's stable user id, never the email). Provider sign-ins are **never matched by email**: a Google sign-in
+  with the same email as a password account makes a separate account (linking happens only while signed in).
+  GitHub is **not** a sign-in method (migration `PasswordAccounts` removed the old GitHub logins); it is only a
+  connection, below.
+- **Passwords and emailed links.** Only a PBKDF2 hash of the password is stored. Confirm-email and reset-password links
+  carry a random token; `AccountTokens` keeps only its SHA-256, an expiry and when it was used, so a copy of the
+  database cannot be used to take over accounts. `Users.SecurityStamp` is in the sign-in cookie; changing it on a
+  password reset or change signs out every other session.
 - **GitHub is a connection.** `GithubConnections` (0 or 1 per user) holds the GitHub account repos are synced from and
   its encrypted token, keyed by GitHub's numeric id (logins can change). One GitHub account feeds at most one DevSheet
   account. `Slug` is a separate, unique, public value (3-30 lowercase letters, digits, hyphens; not a reserved route).
