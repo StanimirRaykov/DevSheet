@@ -19,21 +19,23 @@ public class AuthController(IConfiguration config, IAuthenticationSchemeProvider
     [HttpGet("providers")]
     public IActionResult Providers() => Ok(new { providers = ExternalAuth.EnabledProviders(config) });
 
-    /// <summary>Sign in, or sign up, with a provider (github or google; apple later).</summary>
+    /// <summary>Sign in, or sign up, with a provider (google; apple later). Never GitHub: that is 404.</summary>
     [HttpGet("{provider}")]
     public Task<IActionResult> SignIn(string provider, [FromQuery] string? next = null) =>
-        StartAsync(provider, AuthIntent.SignIn, LocalPath.OrFallback(next));
+        StartAsync(SignInScheme(provider), AuthIntent.SignIn, LocalPath.OrFallback(next));
 
     /// <summary>Add another sign-in method to the signed-in account. Started from Settings.</summary>
     [HttpGet("link/{provider}")]
     public Task<IActionResult> Link(string provider, [FromQuery] string? next = null) =>
-        SignedIn ? StartAsync(provider, AuthIntent.Link, LocalPath.OrFallback(next, SettingsPath)) : Task.FromResult(ToLogin());
+        SignedIn || SignInScheme(provider) is null
+            ? StartAsync(SignInScheme(provider), AuthIntent.Link, LocalPath.OrFallback(next, SettingsPath))
+            : Task.FromResult(ToLogin());
 
     /// <summary>Connect GitHub to the signed-in account, so its repositories can be synced.</summary>
     [HttpGet("github/connect")]
     public Task<IActionResult> ConnectGithub([FromQuery] string? next = null) =>
         SignedIn
-            ? StartAsync(DevSheet.Domain.Entities.LoginProviders.GitHub, AuthIntent.ConnectGithub, LocalPath.OrFallback(next, SettingsPath))
+            ? StartAsync(ExternalAuth.GitHubScheme, AuthIntent.ConnectGithub, LocalPath.OrFallback(next, SettingsPath))
             : Task.FromResult(ToLogin());
 
     [HttpPost("logout")]
@@ -49,13 +51,14 @@ public class AuthController(IConfiguration config, IAuthenticationSchemeProvider
     private IActionResult ToLogin() =>
         Redirect($"{WebOrigin}/login?next={Uri.EscapeDataString(SettingsPath)}");
 
-    private async Task<IActionResult> StartAsync(string provider, AuthIntent intent, string path)
+    private static string? SignInScheme(string provider) =>
+        ExternalAuth.SignInSchemes.TryGetValue(provider.ToLowerInvariant(), out var scheme) ? scheme : null;
+
+    private async Task<IActionResult> StartAsync(string? scheme, AuthIntent intent, string path)
     {
         // A provider without credentials would only show the provider's own error page, so treat it as unknown.
-        if (!ExternalAuth.Schemes.TryGetValue(provider.ToLowerInvariant(), out var scheme)
-            || await schemes.GetSchemeAsync(scheme) is null
-            || !ExternalAuth.IsConfigured(config, scheme))
-            return NotFound(new { error = $"Unknown sign-in provider '{provider}'." });
+        if (scheme is null || await schemes.GetSchemeAsync(scheme) is null || !ExternalAuth.IsConfigured(config, scheme))
+            return NotFound(new { error = "Unknown sign-in provider." });
         return Challenge(ExternalAuth.Properties(WebOrigin + path, intent), scheme);
     }
 }

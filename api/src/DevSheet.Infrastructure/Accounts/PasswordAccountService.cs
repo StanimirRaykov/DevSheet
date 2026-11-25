@@ -13,6 +13,8 @@ public enum PasswordSignInStatus { Success, InvalidCredentials, EmailNotConfirme
 
 public record PasswordSignInResult(PasswordSignInStatus Status, Guid? UserId = null);
 
+public record PasswordStatus(bool HasPassword, string? Email, bool EmailConfirmed, DateTime? ChangedAt);
+
 /// <summary>Result of opening an emailed link. <see cref="UserId"/> is set on success; otherwise <see cref="Error"/>.</summary>
 public record LinkResult(Guid? UserId, string? Error = null, Dictionary<string, string[]>? Errors = null);
 
@@ -158,6 +160,68 @@ public class PasswordAccountService(
         await TrySendAsync(emails.PasswordChanged(login.Email, user.DisplayName), ct);
         return new LinkResult(login.UserId);
     }
+
+    /// <summary>What Settings shows about the password: whether there is one, for which email, and if it is confirmed.</summary>
+    public Task<PasswordStatus> GetStatusAsync(Guid userId, CancellationToken ct = default) =>
+        db.Users.Where(u => u.Id == userId)
+            .Select(u => u.PasswordLogin == null
+                ? new PasswordStatus(false, u.Email, false, null)
+                : new PasswordStatus(true, u.PasswordLogin.Email, u.PasswordLogin.EmailConfirmedAt != null, u.PasswordLogin.PasswordChangedAt))
+            .FirstAsync(ct);
+
+    /// <summary>
+    /// Changes the password of a signed-in user. The current password is required, so a borrowed open session cannot
+    /// take the account over. Changes the security stamp (other sessions are signed out; the caller signs this browser
+    /// in again) and sends a notice. Returns field errors (currentPassword, newPassword), or null.
+    /// </summary>
+    public async Task<Dictionary<string, string[]>?> ChangeAsync(Guid userId, string? currentPassword, string? newPassword, CancellationToken ct = default)
+    {
+        var login = await db.PasswordLogins.FirstAsync(l => l.UserId == userId, ct);
+        if (Hasher.VerifyHashedPassword(login, login.PasswordHash, currentPassword ?? "") == PasswordVerificationResult.Failed)
+            return new() { ["currentPassword"] = ["That is not your current password."] };
+        var errors = Renamed(PasswordRules.CheckPassword(newPassword, login.Email));
+        if (errors.Count > 0) return errors;
+
+        login.PasswordHash = Hasher.HashPassword(login, newPassword!);
+        login.PasswordChangedAt = Now;
+        var user = await db.Users.FirstAsync(u => u.Id == userId, ct);
+        user.SecurityStamp = User.NewSecurityStamp();
+        await db.SaveChangesAsync(ct);
+        await TrySendAsync(emails.PasswordChanged(login.Email, user.DisplayName), ct);
+        return null;
+    }
+
+    /// <summary>
+    /// Adds a password to an account that signs in another way (Google). It works once the confirm link sent to
+    /// <paramref name="email"/> (default: the account email) is opened. Returns field errors (email, newPassword), or null.
+    /// The email must not sign in to another account; saying so here tells only a signed-in, rate-limited user.
+    /// </summary>
+    public async Task<Dictionary<string, string[]>?> AddAsync(Guid userId, string? email, string? newPassword, CancellationToken ct = default)
+    {
+        var user = await db.Users.FirstAsync(u => u.Id == userId, ct);
+        email = string.IsNullOrWhiteSpace(email) ? user.Email : email.Trim();
+        if (!PasswordRules.IsEmail(email))
+            return new() { ["email"] = ["Enter the email address you want to sign in with."] };
+        var errors = Renamed(PasswordRules.CheckPassword(newPassword, email));
+        if (errors.Count > 0) return errors;
+        if (await db.PasswordLogins.AnyAsync(l => l.NormalizedEmail == PasswordLogin.Normalize(email!), ct))
+            return new() { ["email"] = ["This email already signs in to another DevSheet account."] };
+
+        var now = Now;
+        db.PasswordLogins.Add(new PasswordLogin
+        {
+            UserId = userId, Email = email!, NormalizedEmail = PasswordLogin.Normalize(email!),
+            PasswordHash = Hasher.HashPassword(new PasswordLogin(), newPassword!), CreatedAt = now, PasswordChangedAt = now,
+        });
+        var token = await NewTokenAsync(userId, AccountTokenPurpose.ConfirmEmail, ConfirmLifetime, ct);
+        await SendAsync(emails.ConfirmEmail(email!, user.DisplayName, token), ct); // before saving, as in sign-up
+        await db.SaveChangesAsync(ct);
+        return null;
+    }
+
+    /// <summary>In Settings the field is "newPassword", next to "currentPassword".</summary>
+    private static Dictionary<string, string[]> Renamed(Dictionary<string, string[]> errors) =>
+        errors.ToDictionary(e => e.Key == "password" ? "newPassword" : e.Key, e => e.Value);
 
     private sealed record Account(Guid UserId, string Email, string Name, bool Confirmed);
 

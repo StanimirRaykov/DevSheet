@@ -39,7 +39,7 @@ public class CvAuthTests(WebApplicationFactory<Program> factory) : IClassFixture
 public class LoginFlowTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
 {
     [Fact]
-    public async Task Login_endpoint_still_redirects_to_github()
+    public async Task GitHub_no_longer_signs_in_and_connecting_needs_a_session()
     {
         var client = factory.WithWebHostBuilder(b => b
                 .UseEnvironment("Testing")
@@ -47,9 +47,10 @@ public class LoginFlowTests(WebApplicationFactory<Program> factory) : IClassFixt
                 .UseSetting("Authentication:GitHub:ClientSecret", "test-github-secret"))
             .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        var response = await client.GetAsync("/auth/github");
-
-        Assert.Equal(HttpStatusCode.Found, response.StatusCode);
-        Assert.Equal("github.com", response.Headers.Location!.Host);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/auth/github")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/auth/link/github")).StatusCode);
+        var connect = await client.GetAsync("/auth/github/connect");
+        Assert.Equal(HttpStatusCode.Redirect, connect.StatusCode);
+        Assert.Equal("/login", connect.Headers.Location!.AbsolutePath);
     }
 }

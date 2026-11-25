@@ -18,18 +18,20 @@ public static class ExternalAuth
     private const string IntentKey = "devsheet:intent";
 
     /// <summary>
-    /// Our provider names (as in URLs and the database) and their ASP.NET scheme names, in the order the login
+    /// The sign-in providers (as in URLs and the database) and their ASP.NET scheme names, in the order the login
     /// page shows them. The scheme name is also the configuration section: Authentication:{scheme}:ClientId.
+    /// GitHub is not here: it is only connected, for syncing repositories (<see cref="GitHubScheme"/>).
     /// </summary>
-    public static readonly IReadOnlyDictionary<string, string> Schemes = new Dictionary<string, string>
+    public static readonly IReadOnlyDictionary<string, string> SignInSchemes = new Dictionary<string, string>
     {
-        [DevSheet.Domain.Entities.LoginProviders.GitHub] = "GitHub",
         [DevSheet.Domain.Entities.LoginProviders.Google] = "Google",
     };
 
-    /// <summary>Providers whose client id and secret are both set, so signing in with them can work.</summary>
+    public const string GitHubScheme = "GitHub";
+
+    /// <summary>Sign-in providers whose client id and secret are both set, so signing in with them can work.</summary>
     public static IReadOnlyList<string> EnabledProviders(IConfiguration config) =>
-        Schemes.Where(p => IsConfigured(config, p.Value)).Select(p => p.Key).ToList();
+        SignInSchemes.Where(p => IsConfigured(config, p.Value)).Select(p => p.Key).ToList();
 
     public static bool IsConfigured(IConfiguration config, string scheme) =>
         !string.IsNullOrWhiteSpace(config[$"Authentication:{scheme}:ClientId"]) &&
