@@ -15,9 +15,8 @@ import { SettingsLoadError, SettingsLoading, SettingsSection } from "./settings-
 /** Where the OAuth round trips started here come back to. */
 export const RETURN_HERE = "/settings?tab=sign-in";
 
-const NAMES: Record<SignInProvider, string> = { github: "GitHub", google: "Google" };
+const NAMES: Record<SignInProvider, string> = { google: "Google" };
 const MARKS: Record<SignInProvider, ReactNode> = {
-  github: <GithubMark size={20} />,
   google: <GoogleMark size={20} />,
 };
 

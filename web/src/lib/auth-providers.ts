@@ -1,7 +1,10 @@
 import { SERVER_API } from "@/lib/api";
 
-/** Sign-in providers the web app knows how to show, in display order. */
-export const SIGN_IN_PROVIDERS = ["github", "google"] as const;
+/**
+ * Sign-in providers the web app knows how to show, in display order. GitHub is not one: it is only connected
+ * (Settings, onboarding) to import repositories. Apple comes later (#31).
+ */
+export const SIGN_IN_PROVIDERS = ["google"] as const;
 export type SignInProvider = (typeof SIGN_IN_PROVIDERS)[number];
 
 /** Keeps the providers this app can show, in our order, from GET /auth/providers. */
