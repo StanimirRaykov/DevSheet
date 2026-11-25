@@ -54,7 +54,7 @@ export function RouteError({
 /** The inside of a dashboard page while it loads: title, intro and a few rows, at the size of the real content. */
 export function PageSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading the page" className="flex flex-col gap-8">
+    <div role="status" aria-busy="true" aria-label="Loading the page" className="flex flex-col gap-8">
       <div className="flex max-w-prose flex-col gap-2">
         <Skeleton className="h-9 w-48" />
         <Skeleton className="h-4 w-full max-w-md" />

@@ -82,7 +82,7 @@ export function ProfileView({ initialTab }: { initialTab: ProfileTab }) {
     return (
       <div className="flex flex-col gap-8">
         {header}
-        <div aria-busy aria-label="Loading your profile" className="flex flex-col gap-4">
+        <div role="status" aria-busy aria-label="Loading your profile" className="flex flex-col gap-4">
           <Skeleton className="h-10 w-full max-w-xl" />
           <Skeleton className="h-10 w-full max-w-2xl" />
           <Skeleton className="h-32 w-full max-w-2xl" />

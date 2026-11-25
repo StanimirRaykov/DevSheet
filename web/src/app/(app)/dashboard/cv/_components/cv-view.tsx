@@ -135,7 +135,7 @@ function PdfFrame({ src, title }: { src: string; title: string }) {
   return (
     <div className="relative aspect-[210/297] w-full overflow-hidden rounded-panel border border-rule bg-paper max-lg:hidden">
       {!loaded && (
-        <div aria-busy aria-label="Loading the preview" className="absolute inset-0 flex flex-col gap-4 bg-sheet p-10">
+        <div role="status" aria-busy aria-label="Loading the preview" className="absolute inset-0 flex flex-col gap-4 bg-sheet p-10">
           <Skeleton className="h-8 w-1/2" />
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="mt-6 h-4 w-full" />
@@ -145,7 +145,11 @@ function PdfFrame({ src, title }: { src: string; title: string }) {
           <Skeleton className="h-4 w-3/4" />
         </div>
       )}
-      <iframe src={src} title={title} onLoad={() => setLoaded(true)} className={cn("size-full", !loaded && "opacity-0")} />
+      {/*
+        Out of the Tab order: Chrome hands focus to its PDF viewer inside the frame, so no focus ring can show and keyboard
+        users would land somewhere invisible. "Open in a new tab" above opens the same PDF in the full viewer instead.
+      */}
+      <iframe src={src} title={title} tabIndex={-1} onLoad={() => setLoaded(true)} className={cn("size-full", !loaded && "opacity-0")} />
     </div>
   );
 }
@@ -155,7 +159,7 @@ function Included({ summary, onRetry }: { summary: MeSummary | null | "error"; o
     <section aria-labelledby="cv-included" className="flex flex-col gap-3">
       <h2 id="cv-included" className="font-serif text-lg text-ink">What&apos;s included</h2>
       {summary === null && (
-        <div aria-busy aria-label="Loading what is included" className="flex flex-col gap-2">
+        <div role="status" aria-busy aria-label="Loading what is included" className="flex flex-col gap-2">
           {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-5 w-full" />)}
         </div>
       )}

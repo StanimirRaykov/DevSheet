@@ -191,7 +191,7 @@ function Part({ title, count, children }: { title: string; count?: number; child
 
 function Loading() {
   return (
-    <div aria-busy aria-label="Loading skills" className="flex flex-col gap-4">
+    <div role="status" aria-busy aria-label="Loading skills" className="flex flex-col gap-4">
       <Skeleton className="h-6 w-40" />
       <Panel className="divide-y divide-rule">
         {[0, 1, 2].map((i) => (

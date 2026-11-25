@@ -68,7 +68,7 @@ function PageStatus({ summary }: { summary: MeSummary | null | "error" }) {
   ) : (
     <p className="flex flex-wrap items-center gap-2 text-sm text-graphite">
       <Badge>Draft</Badge>
-      <span>Only you can see your page. <Link href="/settings?tab=public-page" className="text-accent underline-offset-2 hover:underline">Publish it</Link> when it is ready.</span>
+      <span>Only you can see your page. <Link href="/settings?tab=public-page" className="font-medium text-ink underline underline-offset-2 hover:decoration-accent">Publish it</Link> when it is ready.</span>
     </p>
   );
 }
@@ -109,7 +109,13 @@ function CountUp({ value }: { value: number }) {
     return () => controls.stop();
   }, [value, reduced]);
 
-  return <span ref={ref}>{reduced ? value : 0}</span>;
+  // The animated digits are for the eye; assistive technology reads the final number once.
+  return (
+    <>
+      <span ref={ref} aria-hidden>{reduced ? value : 0}</span>
+      <span className="sr-only">{value}</span>
+    </>
+  );
 }
 
 function Completeness({ summary }: { summary: MeSummary }) {
@@ -190,10 +196,12 @@ function Attention({ summary }: { summary: MeSummary }) {
         <ul className="flex flex-col gap-1">
           {waiting.map((r) => (
             <li key={r.key}>
-              <Link href={r.href} aria-label={`${r.count} ${r.text}`} className="group -mx-2 flex items-center gap-3 rounded-control px-2 py-2 transition-colors duration-150 hover:bg-accent-soft/40">
+              <Link href={r.href} className="group -mx-2 flex items-center gap-3 rounded-control px-2 py-2 transition-colors duration-150 hover:bg-accent-soft/40">
                 <span className="text-graphite">{r.icon}</span>
-                <span className="font-serif text-2xl leading-none text-ink tabular-nums"><CountUp value={r.count} /></span>
-                <span className="flex-1 text-sm text-ink">{r.text}</span>
+                {/* Read as one sentence; the animated number and the text are for the eye. */}
+                <span className="sr-only">{`${r.count} ${r.text}`}</span>
+                <span aria-hidden className="font-serif text-2xl leading-none text-ink tabular-nums"><CountUp value={r.count} /></span>
+                <span aria-hidden className="flex-1 text-sm text-ink">{r.text}</span>
                 <ChevronRight aria-hidden size={16} className="text-graphite transition-transform duration-150 group-hover:translate-x-0.5" />
               </Link>
             </li>
@@ -249,7 +257,7 @@ function GitHub({ summary, onSynced }: { summary: MeSummary; onSynced: () => Pro
 
 function Loading() {
   return (
-    <div aria-busy aria-label="Loading your overview" className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <div role="status" aria-busy aria-label="Loading your overview" className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <Panel className="flex flex-col gap-5 px-6 py-6">
         <div className="flex justify-between"><Skeleton className="h-6 w-48" /><Skeleton className="h-12 w-20" /></div>
         <Skeleton className="h-2 w-full" />

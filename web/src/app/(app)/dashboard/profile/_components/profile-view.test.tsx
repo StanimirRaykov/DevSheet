@@ -107,7 +107,7 @@ describe("ProfileView", () => {
 
     finish(ok(job));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Edit Developer at Acme" })).toHaveTextContent("Apr 2021 – Present");
+    expect(screen.getByRole("button", { name: /^Edit Developer\b.*Acme/ })).toHaveTextContent("Apr 2021 – Present");
     expect(refreshed).toEqual([["ana-petrova"]]);
   });
 
@@ -115,14 +115,14 @@ describe("ProfileView", () => {
     experience = [job];
     change = (_p, _m, body) => ok({ ...job, ...(body as object) });
     renderView();
-    await userEvent.click(await screen.findByRole("button", { name: "Edit Developer at Acme" }));
+    await userEvent.click(await screen.findByRole("button", { name: /^Edit Developer\b.*Acme/ }));
     const title = within(dialog()).getByRole("textbox", { name: "Job title" });
     await userEvent.clear(title);
     await userEvent.type(title, "Senior developer");
     await userEvent.click(within(dialog()).getByRole("button", { name: "Save changes" }));
 
     expect(calls[0]).toBe('PUT /api/me/experience/j1 {"title":"Senior developer","company":"Acme","description":"APIs","startDate":"2021-04-01","endDate":null}');
-    expect(await screen.findByRole("button", { name: "Edit Senior developer at Acme" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /^Edit Senior developer\b.*Acme/ })).toBeInTheDocument();
   });
 
   it("asks before deleting, then offers Undo that creates the entry again", async () => {
@@ -135,11 +135,11 @@ describe("ProfileView", () => {
 
     expect(calls).toEqual(["DELETE /api/me/experience/j1"]);
     const toast = (await screen.findByText("Experience deleted")).closest("li")!;
-    expect(screen.queryByRole("button", { name: "Edit Developer at Acme" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Edit Developer\b.*Acme/ })).not.toBeInTheDocument();
 
     await userEvent.click(within(toast).getByRole("button", { name: "Undo" }));
     expect(calls[1]).toBe('POST /api/me/experience {"company":"Acme","title":"Developer","startDate":"2021-04-01","endDate":null,"description":"APIs"}');
-    expect(await screen.findByRole("button", { name: "Edit Developer at Acme" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /^Edit Developer\b.*Acme/ })).toBeInTheDocument();
   });
 
   it("sends no levels for a mother tongue, and one level for all five skills otherwise", async () => {

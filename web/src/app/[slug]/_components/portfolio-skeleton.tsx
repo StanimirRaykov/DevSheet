@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui";
 /** The sheet of a public page while it loads, with the same frame and spacing, so nothing jumps when it arrives. */
 export function PortfolioSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading the page" className="min-h-screen bg-paper sm:px-6 sm:py-10">
+    <div role="status" aria-busy="true" aria-label="Loading the page" className="min-h-screen bg-paper sm:px-6 sm:py-10">
       <div className="mx-auto max-w-4xl bg-sheet px-5 py-8 sm:rounded-panel sm:px-10 sm:py-12 sm:shadow-sheet lg:px-14">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <Skeleton className="size-[72px] shrink-0 rounded-full" />

@@ -16,7 +16,7 @@ test("sign in, sync, approve a project, confirm a skill, add experience, downloa
   await expect(approve).toBeVisible();
   await expectAccessible(page, "/dashboard/projects");
   await approve.click();
-  await expect(page.getByText("ledger-api approved")).toBeVisible();
+  await expect(page.getByText("ledger-api approved", { exact: true })).toBeVisible();
 
   // The approved project's languages are now suggestions: confirm C#.
   await page.goto("/dashboard/skills");
