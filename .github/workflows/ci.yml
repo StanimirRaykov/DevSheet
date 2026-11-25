@@ -53,6 +53,49 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  e2e:
+    name: End-to-end (Playwright + axe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: devsheet
+          POSTGRES_PASSWORD: devsheet
+          POSTGRES_DB: devsheet_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U devsheet -d devsheet_e2e"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: web
+    env:
+      E2E_DATABASE: Host=localhost;Port=5432;Database=devsheet_e2e;Username=devsheet;Password=devsheet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Starts the API (Testing environment, stubbed GitHub) and a production build of the web app, then runs the tests.
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report
+            web/test-results
+          retention-days: 7
+
   docker:
     name: Docker (build images + smoke test)
     runs-on: ubuntu-latest
