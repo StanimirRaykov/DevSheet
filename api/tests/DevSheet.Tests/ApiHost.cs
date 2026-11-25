@@ -24,6 +24,8 @@ public sealed class ApiHost : IDisposable
 {
     private readonly SqliteConnection _conn = new("DataSource=:memory:");
     public WebApplicationFactory<Program> Factory { get; }
+    /// <summary>Every email the API sent during the test.</summary>
+    public RecordingEmailSender Emails { get; } = new();
 
     public ApiHost(WebApplicationFactory<Program> factory, bool withGoogle = true)
     {
@@ -38,6 +40,8 @@ public sealed class ApiHost : IDisposable
             {
                 s.RemoveAll<DbContextOptions<AppDbContext>>();
                 s.AddDbContext<AppDbContext>(o => o.UseSqlite(_conn));
+                s.RemoveAll<DevSheet.Application.Abstractions.IEmailSender>();
+                s.AddSingleton<DevSheet.Application.Abstractions.IEmailSender>(Emails);
                 s.AddAuthentication().AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, null);
                 s.PostConfigure<AuthenticationOptions>(o =>
                 {

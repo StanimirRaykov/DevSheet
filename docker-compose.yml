@@ -1,5 +1,6 @@
 # Full stack:        docker compose up --build        (web http://localhost:3000, API http://localhost:5217)
-# Database only:     docker compose up -d db           (daily development: API and web run on the host)
+# Database only:     docker compose up -d db mailpit   (daily development: API and web run on the host)
+# Emails sent in development land in Mailpit: http://localhost:8025
 # Secrets and settings come from a git-ignored .env next to this file (copy .env.example).
 
 x-api-image: &api-image
@@ -25,6 +26,13 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # Catches every email the API sends (confirm address, reset password) instead of delivering it.
+  # Inbox: http://localhost:8025. SMTP on 1025, which is the API's default (Email:Smtp).
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    ports: ["1025:1025", "8025:8025"]
+    restart: unless-stopped
+
   # One-shot database step: applies EF Core migrations and seeds the skill catalogue, then exits.
   # The API server itself never migrates outside Development.
   migrate:
@@ -46,11 +54,19 @@ services:
       Authentication__GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET:-}
       Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
       Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      # Inside the Docker network Mailpit is "mailpit", not localhost. Set EMAIL_SMTP_* for a real provider.
+      Email__Smtp__Host: ${EMAIL_SMTP_HOST:-mailpit}
+      Email__Smtp__Port: ${EMAIL_SMTP_PORT:-1025}
+      Email__Smtp__Security: ${EMAIL_SMTP_SECURITY:-None}
+      Email__Smtp__User: ${EMAIL_SMTP_USER:-}
+      Email__Smtp__Password: ${EMAIL_SMTP_PASSWORD:-}
+      Email__Smtp__From: ${EMAIL_FROM:-no-reply@devsheet.local}
     # Data Protection keys (login cookie, stored GitHub tokens). Kept in a volume so restarts don't log anyone out.
     volumes: [dpkeys:/keys]
     depends_on:
       db: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
+      mailpit: { condition: service_started }
     restart: unless-stopped
     # Health check (GET /health) is defined in api/Dockerfile.
 

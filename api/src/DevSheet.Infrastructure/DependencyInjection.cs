@@ -15,6 +15,8 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(o => o.UseNpgsql(config.GetConnectionString("Default")));
         services.AddScoped<ITokenProtector, TokenProtector>();
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(Email.SmtpOptions.From(config));
+        services.AddSingleton<IEmailSender, Email.SmtpEmailSender>();
         services.AddScoped<IGitHubRepoSource, OctokitRepoSource>();
         services.AddScoped<IGitHubSyncService, GitHubSyncService>();
         services.AddScoped<DevSheet.Infrastructure.Skills.ProjectSkillService>();

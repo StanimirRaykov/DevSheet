@@ -30,7 +30,9 @@ Key design decisions
 
 Prerequisites: .NET 8 SDK, Node 20+, PostgreSQL (Docker or local).
 
-1. Database: `docker compose up -d db` (or point `ConnectionStrings:Default` at your own Postgres).
+1. Database and mail catcher: `docker compose up -d db mailpit` (or point `ConnectionStrings:Default` at your own
+   Postgres). Every email the API sends (confirm address, reset password) lands in Mailpit at
+   http://localhost:8025 instead of being delivered.
 2. Register a GitHub OAuth app (Settings → Developer settings → OAuth Apps):
    - Homepage URL: `http://localhost:3000`
    - Callback URL: `http://localhost:5217/signin-github`
@@ -69,7 +71,9 @@ docker compose up --build # web http://localhost:3000, API http://localhost:5217
 - The API runs as Production inside Docker: no Swagger, and it does not migrate on start; the `migrate` service does that.
 - Data Protection keys live in the `dpkeys` volume, so `docker compose restart api` keeps you logged in and stored GitHub tokens stay readable.
 - `NEXT_PUBLIC_API_URL` is baked into the web image at build time (the browser uses it). Rebuild the `web` image if it changes.
-- Daily development stays on the host with hot reload; `docker compose up -d db` starts only the database.
+- Emails go to Mailpit (http://localhost:8025). For a real provider set the `EMAIL_SMTP_*` and `EMAIL_FROM` values in `.env`
+  (sending from your own address needs a domain).
+- Daily development stays on the host with hot reload; `docker compose up -d db mailpit` starts only the database and the mail catcher.
 - `docker compose down` stops everything; add `-v` to also delete the database and the keys.
 
 ## Database

@@ -21,3 +21,15 @@ public interface IGitHubRepoSource
 {
     Task<IReadOnlyList<RemoteRepo>> GetPublicReposAsync(string login, string token, int max, CancellationToken ct = default);
 }
+
+/// <summary>An email to one person. <see cref="Text"/> is always sent; <see cref="Html"/> is the same content, formatted.</summary>
+public record EmailMessage(string To, string Subject, string Text, string Html);
+
+/// <summary>
+/// Sends account emails (confirm address, reset password). SMTP in every environment: Mailpit in development,
+/// a real provider once there is a domain. Tests replace it with a recorder.
+/// </summary>
+public interface IEmailSender
+{
+    Task SendAsync(EmailMessage message, CancellationToken ct = default);
+}
