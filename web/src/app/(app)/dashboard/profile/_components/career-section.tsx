@@ -238,9 +238,10 @@ function Entry({ name, onEdit, onDelete, children }: { name: string; onEdit: () 
       <button
         type="button"
         onClick={onEdit}
-        aria-label={`Edit ${name}`}
         className="min-w-0 flex-1 rounded-control px-3 py-3 text-left transition-colors duration-150 hover:bg-accent-soft/40 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       >
+        {/* Named by what it shows (so voice control can use the visible words), with its purpose first. */}
+        <span className="sr-only">Edit </span>
         {children}
       </button>
       <button

@@ -95,8 +95,10 @@ A test and a CI step fail when the model changes without a migration.
 ```bash
 cd api && dotnet test                                   # xUnit (SQLite in-memory, no Postgres needed)
 cd web && npm run lint && npm run typecheck && npm test && npm run build
+cd web && npm run e2e                                   # Playwright + axe (needs Postgres: docker compose up -d db)
 ```
-GitHub Actions (`.github/workflows/ci.yml`) runs both on every push and pull request.
+GitHub Actions (`.github/workflows/ci.yml`) runs all three on every push and pull request (end-to-end as its own job).
+Details of the end-to-end setup, the accessibility checks and the Lighthouse results: [`docs/TESTING.md`](docs/TESTING.md).
 The backlog lives in `docs/BACKLOG.md` and `docs/issues/` (detailed issues, created with `scripts/create-issues.sh`); workflow in `CONTRIBUTING.md`.
 
 ## Status

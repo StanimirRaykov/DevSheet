@@ -17,7 +17,7 @@ export function SettingsSection({
   className?: string;
 }) {
   return (
-    <section className={cn("grid gap-4 border-b border-rule py-6 first:pt-1 last:border-b-0 md:grid-cols-[14rem_1fr] md:gap-8", className)}>
+    <section className={cn("grid gap-4 border-b border-rule py-6 first:pt-1 last:border-b-0 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-8", className)}>
       <div className="flex flex-col gap-1">
         <h2 className="font-medium text-ink">{title}</h2>
         {description && <p className="text-sm text-graphite">{description}</p>}

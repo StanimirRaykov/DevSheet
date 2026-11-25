@@ -36,16 +36,20 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
       trigger={
         <button
           type="button"
-          aria-label={`Account menu for ${me.displayName}`}
           className={cn(
             "flex items-center gap-2.5 rounded-control text-left transition-colors duration-150 hover:bg-sheet/60",
             compact ? "p-1" : "w-full p-2",
           )}
         >
-          <Avatar name={me.displayName} src={me.avatarUrl} size={compact ? 30 : 32} />
-          {!compact && (
+          {/* The name is the button's label (what people see is what they can say to voice control), then its purpose. */}
+          <span aria-hidden className="contents"><Avatar name={me.displayName} src={me.avatarUrl} size={compact ? 30 : 32} /></span>
+          {compact ? (
+            <span className="sr-only">{me.displayName}, account menu</span>
+          ) : (
             <>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{me.displayName}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
+                {me.displayName}<span className="sr-only">, account menu</span>
+              </span>
               <ChevronsUpDown aria-hidden size={15} className="text-graphite" />
             </>
           )}

@@ -278,7 +278,7 @@ function TabEmpty({ tab, github, syncing, onSync }: { tab: ProjectTab; github: b
 
 function LoadingRows() {
   return (
-    <div aria-busy className="flex flex-col gap-4" aria-label="Loading projects">
+    <div role="status" aria-busy className="flex flex-col gap-4" aria-label="Loading projects">
       <Skeleton className="h-10 w-72" />
       <Panel className="divide-y divide-rule">
         {[0, 1, 2, 3].map((i) => (

@@ -33,7 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
 
-      <div className="min-h-screen md:grid md:grid-cols-[15rem_1fr]">
+      <div className="min-h-screen md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
         {/* Desktop sidebar */}
         <aside className="sticky top-0 hidden h-screen flex-col gap-8 border-r border-rule px-4 py-6 md:flex">
           <div className="px-3"><Wordmark /></div>
@@ -78,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 /** Shown while the login is being checked: the shell's outline, so the page does not flash empty. */
 export function ShellFallback() {
   return (
-    <div aria-busy="true" aria-label="Loading" className="min-h-screen md:grid md:grid-cols-[15rem_1fr]">
+    <div role="status" aria-busy="true" aria-label="Loading" className="min-h-screen md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <div className="hidden flex-col gap-8 border-r border-rule px-7 py-6 md:flex">
         <Skeleton className="h-6 w-24" />
         <div className="flex flex-col gap-3">
