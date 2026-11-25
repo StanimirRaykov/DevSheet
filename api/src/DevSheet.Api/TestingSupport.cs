@@ -50,8 +50,7 @@ public static class TestingSupport
                 new GithubGrant(githubId, login, "e2e-fake-token"));
             if (body.CompleteOnboarding) await onboarding.CompleteAsync(user.Id);
 
-            var identity = new ClaimsIdentity([new Claim(ExternalAuth.UserIdClaim, user.Id.ToString())], CookieAuthenticationDefaults.AuthenticationScheme);
-            await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+            await Sessions.SignInAsync(http, user.Id);
             return Results.Ok(new { user.Id, user.Slug });
         });
     }

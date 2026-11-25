@@ -42,6 +42,8 @@ builder.Services
         o.Cookie.SameSite = SameSiteMode.Lax;
         // API endpoints should answer 401, not redirect to GitHub.
         o.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };
+        // Every request: the account still exists and its security stamp is unchanged (no reset since sign-in).
+        o.Events.OnValidatePrincipal = Sessions.ValidateAsync;
     })
     .AddGitHub(o =>
     {
@@ -89,6 +91,7 @@ builder.Services
         o.Events.OnRemoteFailure = ctx => ExternalAuth.OnRemoteFailure(ctx, webOrigin);
     });
 builder.Services.AddAuthorization();
+AuthRateLimits.Add(builder.Services, builder.Configuration);
 
 // OAuth credentials fall back to a placeholder so the API boots before a provider is registered.
 // GET /auth/providers leaves such a provider out, so the login page never shows a button that cannot work.
@@ -116,6 +119,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

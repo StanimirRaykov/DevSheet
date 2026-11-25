@@ -63,7 +63,9 @@ public static class ExternalAuth
             ctx.Fail(outcome.Error ?? AuthErrors.SignInFailed);
             return;
         }
-        ((ClaimsIdentity)ctx.Principal!.Identity!).AddClaim(new Claim(UserIdClaim, userId.ToString()));
+        var stamp = await ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>().Users
+            .Where(u => u.Id == userId).Select(u => u.SecurityStamp).FirstAsync(ctx.HttpContext.RequestAborted);
+        ((ClaimsIdentity)ctx.Principal!.Identity!).AddClaims(Sessions.Claims(userId, stamp));
         if (outcome.Error is not null)
             ctx.Properties.RedirectUri = WithError(ctx.Properties.RedirectUri ?? "", outcome.Error);
         else if (intent == AuthIntent.SignIn)

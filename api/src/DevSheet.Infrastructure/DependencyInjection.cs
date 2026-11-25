@@ -23,6 +23,8 @@ public static class DependencyInjection
         services.AddScoped<DevSheet.Infrastructure.Career.CareerService>();
         services.AddScoped<DevSheet.Infrastructure.Cv.CvDataService>();
         services.AddScoped<DevSheet.Infrastructure.Accounts.AccountService>();
+        services.AddScoped<DevSheet.Infrastructure.Accounts.PasswordAccountService>();
+        services.AddSingleton(new DevSheet.Infrastructure.Accounts.AccountEmails(config["WebOrigin"] ?? "http://localhost:3000"));
         services.AddScoped<DevSheet.Infrastructure.Accounts.AccountSettingsService>();
         services.AddScoped<DevSheet.Infrastructure.Accounts.OnboardingService>();
         return services;

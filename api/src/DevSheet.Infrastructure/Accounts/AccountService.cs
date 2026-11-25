@@ -196,7 +196,10 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
         connection.EncryptedToken = tokens.Protect(github.AccessToken);
     }
 
-    private async Task<string> FreeSlugAsync(string name, CancellationToken ct)
+    private Task<string> FreeSlugAsync(string name, CancellationToken ct) => FreeSlugAsync(db, name, ct);
+
+    /// <summary>The first free public slug made from a name (also counts users added but not saved yet).</summary>
+    internal static async Task<string> FreeSlugAsync(AppDbContext db, string name, CancellationToken ct)
     {
         foreach (var slug in SlugRules.Candidates(name))
             if (!await db.Users.AnyAsync(u => u.Slug == slug, ct) && !db.Users.Local.Any(u => u.Slug == slug))
