@@ -80,7 +80,7 @@ public class PasswordAccountService(
         var token = await NewTokenAsync(user.Id, AccountTokenPurpose.ConfirmEmail, ConfirmLifetime, ct);
         // Sent before saving: if the mail server is down nothing is kept, and signing up again works.
         await SendAsync(emails.ConfirmEmail(email, name, token), ct);
-        await db.SaveChangesAsync(ct);
+        await AccountService.SaveNewUserAsync(db, user, ct);
         return null;
     }
 

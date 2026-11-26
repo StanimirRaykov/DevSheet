@@ -68,6 +68,25 @@ public class AccountServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_slug_taken_between_choosing_and_saving_moves_to_the_next_free_one()
+    {
+        // Another request saves "maria-p" after this one chose it but before it saved (two sign-ups at once).
+        var user = new User { DisplayName = "Maria P", Slug = await AccountService.FreeSlugAsync(_t.Db, "Maria P", default) };
+        await using (var other = new DevSheet.Infrastructure.Persistence.AppDbContext(
+            new DbContextOptionsBuilder<DevSheet.Infrastructure.Persistence.AppDbContext>().UseSqlite(_t.Db.Database.GetDbConnection()).Options))
+        {
+            other.Users.Add(new User { DisplayName = "Maria P", Slug = "maria-p" });
+            await other.SaveChangesAsync();
+        }
+        _t.Db.Users.Add(user);
+
+        await AccountService.SaveNewUserAsync(_t.Db, user, default);
+
+        Assert.Equal("maria-p-2", user.Slug);
+        Assert.Equal(2, await _t.Db.Users.CountAsync());
+    }
+
+    [Fact]
     public async Task Linking_adds_a_second_sign_in_method_to_the_same_account()
     {
         var user = _t.AddUser("ana");

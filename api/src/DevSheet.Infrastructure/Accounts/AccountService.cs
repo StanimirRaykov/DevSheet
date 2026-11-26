@@ -80,11 +80,11 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
                 Email = identity.Email, CreatedAt = now,
             });
             db.Users.Add(user);
+            await SaveNewUserAsync(db, user, ct);
+            return user;
         }
-        else if (identity.AvatarUrl is not null)
-        {
+        if (identity.AvatarUrl is not null)
             user.AvatarUrl = identity.AvatarUrl;
-        }
 
         await db.SaveChangesAsync(ct);
         return user;
@@ -186,6 +186,30 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
     }
 
     private Task<string> FreeSlugAsync(string name, CancellationToken ct) => FreeSlugAsync(db, name, ct);
+
+    /// <summary>
+    /// Saves a new account. Two people with the same name signing up at the same moment can both be offered the same
+    /// slug; the database's unique index refuses the second, which then takes the next free one instead of failing.
+    /// </summary>
+    public static async Task SaveNewUserAsync(AppDbContext db, User user, CancellationToken ct)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return;
+            }
+            catch (DbUpdateException) when (attempt < 5)
+            {
+                if (!await SlugTakenAsync(db, user, ct)) throw;
+                user.Slug = await FreeSlugAsync(db, user.DisplayName, ct);
+            }
+        }
+    }
+
+    private static Task<bool> SlugTakenAsync(AppDbContext db, User user, CancellationToken ct) =>
+        db.Users.AsNoTracking().AnyAsync(u => u.Slug == user.Slug && u.Id != user.Id, ct);
 
     /// <summary>The first free public slug made from a name (also counts users added but not saved yet).</summary>
     public static async Task<string> FreeSlugAsync(AppDbContext db, string name, CancellationToken ct)
