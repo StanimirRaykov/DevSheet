@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { Button, Field, Input } from "@/components/ui";
 import { answerMessage, postAuth, rememberPendingEmail, type AuthAnswer } from "@/lib/account";
 import { Notice, textLink } from "../../_components/auth-card";
-import { PasswordInput } from "../../_components/password-input";
+import { PasswordInput } from "@/components/password-input";
 
 /** Email and password sign-in. After it works, a full page load opens `next` (or /welcome before onboarding). */
 export function PasswordSignIn({ next }: { next: string }) {

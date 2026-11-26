@@ -29,8 +29,12 @@ const me = (connected: boolean): Me => ({
   github: connected ? { login: "ana-dev", lastSyncedAt: null } : null,
 });
 
-function renderMethods(logins: Login[], enabled: "google"[] = ["google"], onChange = () => {}) {
-  return render(<ToastProvider><SignInMethods logins={logins} enabled={enabled} onChange={onChange} /></ToastProvider>);
+function renderMethods(logins: Login[], enabled: "google"[] = ["google"], onChange = () => {}, passwordSignsIn = false) {
+  return render(
+    <ToastProvider>
+      <SignInMethods logins={logins} enabled={enabled} passwordSignsIn={passwordSignsIn} onChange={onChange} />
+    </ToastProvider>,
+  );
 }
 
 function renderGithub(connected: boolean) {
@@ -57,7 +61,19 @@ describe("SignInMethods", () => {
     renderMethods([google]);
     expect(within(row("Google")).getByText(/ana@gmail.example/)).toBeVisible();
     expect(within(row("Google")).getByRole("button", { name: "Remove" })).toBeDisabled();
-    expect(screen.getByText(/only sign-in method/)).toBeVisible();
+    expect(screen.getByText(/only way to sign in/)).toBeVisible();
+  });
+
+  it("lets the last provider go when a confirmed password also signs in", () => {
+    renderMethods([google], ["google"], () => {}, true);
+    expect(within(row("Google")).getByRole("button", { name: "Remove" })).toBeEnabled();
+    expect(screen.queryByText(/only way to sign in/)).toBeNull();
+  });
+
+  it("does not warn about the last method when only a password signs in", () => {
+    renderMethods([], ["google"], () => {}, true);
+    expect(within(row("Google")).getByRole("link", { name: "Add Google" })).toBeVisible();
+    expect(screen.queryByText(/only way to sign in/)).toBeNull();
   });
 
   it("removes a method when there is another one, then reloads", async () => {

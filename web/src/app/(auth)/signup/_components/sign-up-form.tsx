@@ -5,7 +5,7 @@ import { useState, type FormEvent } from "react";
 import { Button, Field, Input } from "@/components/ui";
 import { answerMessage, postAuth, rememberPendingEmail, type AuthAnswer } from "@/lib/account";
 import { Notice } from "../../_components/auth-card";
-import { PasswordInput } from "../../_components/password-input";
+import { PasswordInput } from "@/components/password-input";
 
 const FIELDS = ["name", "email", "password"] as const;
 

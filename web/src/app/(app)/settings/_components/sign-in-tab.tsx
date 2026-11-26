@@ -10,6 +10,7 @@ import { PUBLIC_API } from "@/lib/api";
 import { knownProviders, SIGN_IN_PROVIDERS, type SignInProvider } from "@/lib/auth-providers";
 import { send } from "@/lib/client";
 import { formatTimeAgo } from "@/lib/dates";
+import { PasswordSection, type PasswordStatus } from "./password-section";
 import { SettingsLoadError, SettingsLoading, SettingsSection } from "./settings-section";
 
 /** Where the OAuth round trips started here come back to. */
@@ -27,15 +28,16 @@ export interface Login {
 }
 
 export function SignInTab() {
-  const [data, setData] = useState<{ logins: Login[]; enabled: SignInProvider[] } | null | "error">(null);
+  const [data, setData] = useState<{ logins: Login[]; enabled: SignInProvider[]; password: PasswordStatus } | null | "error">(null);
 
   const load = useCallback(async () => {
-    const [logins, providers] = await Promise.all([
+    const [logins, providers, password] = await Promise.all([
       send<Login[]>("/api/me/logins"),
       send<{ providers: unknown }>("/auth/providers"),
+      send<PasswordStatus>("/api/me/password"),
     ]);
-    if (!logins.data || !providers.data) return setData("error");
-    setData({ logins: logins.data, enabled: knownProviders(providers.data.providers) });
+    if (!logins.data || !providers.data || !password.data) return setData("error");
+    setData({ logins: logins.data, enabled: knownProviders(providers.data.providers), password: password.data });
   }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loads from the API once; state is set when it answers
@@ -45,22 +47,35 @@ export function SignInTab() {
   if (data === "error") return <SettingsLoadError />;
   return (
     <div>
-      <SignInMethods logins={data.logins} enabled={data.enabled} onChange={load} />
+      <PasswordSection status={data.password} onChange={load} />
+      <SignInMethods
+        logins={data.logins}
+        enabled={data.enabled}
+        passwordSignsIn={data.password.hasPassword && data.password.emailConfirmed}
+        onChange={load}
+      />
       <GithubConnection />
     </div>
   );
 }
 
 /**
- * One row per provider: linked ones with Remove (not for the last one), set-up ones with Add.
+ * One row per provider: linked ones with Remove (not for the last way in), set-up ones with Add.
  * A provider that is linked but no longer set up on the server still shows, so it can be removed.
+ * A confirmed password is another way in, so with one every provider can be removed.
  */
-export function SignInMethods({ logins, enabled, onChange }: { logins: Login[]; enabled: SignInProvider[]; onChange: () => void }) {
+export function SignInMethods({ logins, enabled, passwordSignsIn = false, onChange }: {
+  logins: Login[];
+  enabled: SignInProvider[];
+  passwordSignsIn?: boolean;
+  onChange: () => void;
+}) {
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const linked = new Map(logins.map((l) => [l.provider, l]));
   const rows = SIGN_IN_PROVIDERS.filter((p) => linked.has(p) || enabled.includes(p));
-  const onlyOne = logins.length <= 1;
+  const onlyOne = logins.length + (passwordSignsIn ? 1 : 0) <= 1;
+  if (rows.length === 0) return null;
 
   async function unlink(provider: SignInProvider) {
     setBusy(provider);
@@ -76,8 +91,8 @@ export function SignInMethods({ logins, enabled, onChange }: { logins: Login[]; 
 
   return (
     <SettingsSection
-      title="Sign-in methods"
-      description="Any of these signs you in to this DevSheet. Keep at least one."
+      title="Other sign-in methods"
+      description="Any of these signs you in to this DevSheet, as does a confirmed password. Keep at least one way in."
     >
       <ul className="flex max-w-xl flex-col divide-y divide-rule rounded-panel border border-rule bg-sheet">
         {rows.map((p) => {
@@ -99,7 +114,7 @@ export function SignInMethods({ logins, enabled, onChange }: { logins: Login[]; 
                   size="sm"
                   disabled={onlyOne}
                   loading={busy === p}
-                  title={onlyOne ? "This is your only way to sign in. Add another one first." : undefined}
+                  title={onlyOne ? "This is your only way to sign in. Add a password or another method first." : undefined}
                   onClick={() => unlink(p)}
                 >
                   Remove
@@ -113,7 +128,7 @@ export function SignInMethods({ logins, enabled, onChange }: { logins: Login[]; 
           );
         })}
       </ul>
-      {onlyOne && <p className="mt-2 text-sm text-graphite">This is your only sign-in method, so it cannot be removed. Add another one first.</p>}
+      {onlyOne && logins.length > 0 && <p className="mt-2 text-sm text-graphite">This is your only way to sign in, so it cannot be removed. Add a password or another method first.</p>}
     </SettingsSection>
   );
 }

@@ -5,7 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button, Field } from "@/components/ui";
 import { answerMessage, hideTokenFromAddressBar, postAuth, type AuthAnswer } from "@/lib/account";
 import { Notice, textLink } from "../../_components/auth-card";
-import { PasswordInput } from "../../_components/password-input";
+import { PasswordInput } from "@/components/password-input";
 
 /** The new password. Saving signs in here and signs out every other device. */
 export function ResetForm({ token }: { token: string }) {
