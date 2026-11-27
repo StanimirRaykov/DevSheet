@@ -16,9 +16,14 @@ public class ExternalLogin
 
 public static class LoginProviders
 {
+    /// <summary>
+    /// Only as a connection (<see cref="GithubConnection"/>), never to sign in. Kept here because the OAuth plumbing
+    /// and URLs (/auth/github/connect) use the same provider names.
+    /// </summary>
     public const string GitHub = "github";
     public const string Google = "google";
     public const string Apple = "apple";
 
-    public static readonly IReadOnlySet<string> All = new HashSet<string> { GitHub, Google, Apple };
+    /// <summary>Providers that sign in (and can be linked in Settings).</summary>
+    public static readonly IReadOnlySet<string> SignIn = new HashSet<string> { Google, Apple };
 }

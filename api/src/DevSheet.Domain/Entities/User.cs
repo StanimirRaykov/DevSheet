@@ -1,8 +1,9 @@
 namespace DevSheet.Domain.Entities;
 
 /// <summary>
-/// A DevSheet account. It exists on its own: people sign in through one or more <see cref="ExternalLogin"/>s
-/// (GitHub, Google, Apple), and GitHub repositories come from an optional <see cref="GithubConnection"/>.
+/// A DevSheet account. It exists on its own: people sign in with email and password (<see cref="PasswordLogin"/>)
+/// and/or through <see cref="ExternalLogin"/>s (Google, Apple). GitHub is never a way to sign in: repositories come
+/// from an optional <see cref="GithubConnection"/>.
 /// </summary>
 public class User
 {
@@ -19,8 +20,16 @@ public class User
     public DateTime? OnboardingCompletedAt { get; set; }
     /// <summary>The welcome step the user last reached, so leaving halfway resumes there.</summary>
     public OnboardingStep OnboardingStep { get; set; }
+    /// <summary>
+    /// Copied into the sign-in cookie and checked on every request. Changing it (password reset or change) signs
+    /// out every other session.
+    /// </summary>
+    public string SecurityStamp { get; set; } = NewSecurityStamp();
+
+    public static string NewSecurityStamp() => Guid.NewGuid().ToString("N");
 
     public List<ExternalLogin> Logins { get; set; } = new();
+    public PasswordLogin? PasswordLogin { get; set; }
     public GithubConnection? GithubConnection { get; set; }
     public Profile? Profile { get; set; }
     public List<GithubRepo> Repos { get; set; } = new();

@@ -58,6 +58,10 @@ public class TestingSupportTests(WebApplicationFactory<Program> factory) : IClas
         var user = db.Users.Single(u => u.Id == a.Id);
         Assert.NotNull(user.OnboardingCompletedAt);
         Assert.Equal("e2e-ana", db.GithubConnections.Single(g => g.UserId == a.Id).Login);
+        // A confirmed password login, never a GitHub one: GitHub does not sign in any more.
+        Assert.False(db.ExternalLogins.Any(l => l.UserId == a.Id));
+        var password = await _api.Client().PostAsJsonAsync("/auth/sign-in", new { email = "e2e-ana@e2e.example.test", password = TestingSupport.Password });
+        Assert.Equal(HttpStatusCode.OK, password.StatusCode);
     }
 
     [Fact]

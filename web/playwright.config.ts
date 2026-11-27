@@ -4,7 +4,8 @@ import { defineConfig, devices } from "@playwright/test";
  * End-to-end tests. They start their own API (Testing environment, stubbed GitHub, its own database) and their own
  * production build of the web app on other ports, so a running dev setup is never touched.
  *
- *   npx playwright test            (needs PostgreSQL on localhost:5432, as for development: docker compose up -d db)
+ *   npx playwright test            (needs PostgreSQL on localhost:5432 and Mailpit on 1025/8025, as for development:
+ *                                   docker compose up -d db mailpit)
  *   npx playwright test --ui       (watch and debug)
  */
 const API_PORT = 5317;
@@ -39,6 +40,10 @@ export default defineConfig({
         ConnectionStrings__Default: DATABASE,
         WebOrigin: WEB,
         Testing__StubGitHub: "true",
+        // Account emails go over SMTP to Mailpit (the appsettings default, localhost:1025); tests read the links there.
+        // Every test signs up from the same address, so the per-IP limits are raised; the per-email ones stay.
+        Auth__RateLimits__SignInsPerIpPerMinute: "1000",
+        Auth__RateLimits__EmailsPerIpPerHour: "1000",
       },
       reuseExistingServer: !process.env.CI,
       timeout: 240_000,

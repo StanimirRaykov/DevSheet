@@ -22,6 +22,44 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("DevSheet.Domain.Entities.AccountToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "Purpose");
+
+                    b.ToTable("AccountTokens");
+                });
+
             modelBuilder.Entity("DevSheet.Domain.Entities.Certification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -237,6 +275,42 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.ToTable("Languages");
                 });
 
+            modelBuilder.Entity("DevSheet.Domain.Entities.PasswordLogin", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
+                    b.Property<DateTime?>("EmailConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
+                    b.Property<DateTime>("PasswordChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("NormalizedEmail")
+                        .IsUnique();
+
+                    b.ToTable("PasswordLogins");
+                });
+
             modelBuilder.Entity("DevSheet.Domain.Entities.Profile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -421,6 +495,11 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.Property<int>("OnboardingStep")
                         .HasColumnType("integer");
 
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("text");
@@ -465,6 +544,15 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("WorkExperiences");
+                });
+
+            modelBuilder.Entity("DevSheet.Domain.Entities.AccountToken", b =>
+                {
+                    b.HasOne("DevSheet.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DevSheet.Domain.Entities.Certification", b =>
@@ -519,6 +607,15 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.HasOne("DevSheet.Domain.Entities.User", null)
                         .WithMany("Languages")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DevSheet.Domain.Entities.PasswordLogin", b =>
+                {
+                    b.HasOne("DevSheet.Domain.Entities.User", null)
+                        .WithOne("PasswordLogin")
+                        .HasForeignKey("DevSheet.Domain.Entities.PasswordLogin", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -602,6 +699,8 @@ namespace DevSheet.Infrastructure.Persistence.Migrations
                     b.Navigation("Languages");
 
                     b.Navigation("Logins");
+
+                    b.Navigation("PasswordLogin");
 
                     b.Navigation("Profile");
 

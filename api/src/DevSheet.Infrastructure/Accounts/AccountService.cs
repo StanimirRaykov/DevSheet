@@ -15,7 +15,7 @@ public record GithubGrant(long GithubId, string Login, string AccessToken);
 /// <summary>Why the OAuth round trip was started.</summary>
 public enum AuthIntent
 {
-    /// <summary>Sign in (or sign up) with a provider.</summary>
+    /// <summary>Sign in (or sign up) with a provider. Only the providers in <see cref="LoginProviders.SignIn"/>.</summary>
     SignIn,
     /// <summary>Add another sign-in method to the signed-in account (from Settings).</summary>
     Link,
@@ -54,12 +54,14 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
     /// <summary>
     /// Signs in with a provider: finds the account that owns this (provider, key), or creates a new one.
     /// Never matches by email: the same email on another provider still makes a separate account
-    /// (linking happens only while signed in, from Settings). A GitHub sign-in also connects GitHub.
+    /// (linking happens only while signed in, from Settings). GitHub cannot sign in (it is only connected).
     /// </summary>
-    public async Task<User> SignInAsync(ExternalIdentity identity, GithubGrant? github = null, CancellationToken ct = default)
+    public async Task<User> SignInAsync(ExternalIdentity identity, CancellationToken ct = default)
     {
+        if (!LoginProviders.SignIn.Contains(identity.Provider))
+            throw new ArgumentException($"'{identity.Provider}' is not a sign-in provider.", nameof(identity));
         var now = clock.GetUtcNow().UtcDateTime;
-        var user = await db.Users.Include(u => u.GithubConnection)
+        var user = await db.Users
             .FirstOrDefaultAsync(u => u.Logins.Any(l => l.Provider == identity.Provider && l.ProviderKey == identity.ProviderKey), ct);
 
         if (user is null)
@@ -69,7 +71,7 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
                 DisplayName = identity.DisplayName,
                 Email = identity.Email,
                 AvatarUrl = identity.AvatarUrl,
-                Slug = await FreeSlugAsync(github?.Login ?? identity.DisplayName, ct),
+                Slug = await FreeSlugAsync(identity.DisplayName, ct),
                 CreatedAt = now,
             };
             user.Logins.Add(new ExternalLogin
@@ -78,13 +80,12 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
                 Email = identity.Email, CreatedAt = now,
             });
             db.Users.Add(user);
+            await SaveNewUserAsync(db, user, ct);
+            return user;
         }
-        else if (identity.AvatarUrl is not null)
-        {
+        if (identity.AvatarUrl is not null)
             user.AvatarUrl = identity.AvatarUrl;
-        }
 
-        if (github is not null) await RefreshGithubAsync(user, github, now, ct);
         await db.SaveChangesAsync(ct);
         return user;
     }
@@ -94,8 +95,12 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
     public async Task<AuthOutcome> CompleteAsync(
         AuthIntent intent, Guid? currentUserId, ExternalIdentity identity, GithubGrant? github = null, CancellationToken ct = default)
     {
+        // GitHub only connects: a GitHub round trip that comes back as a sign-in or a link (an old or tampered start)
+        // must not create or reach an account.
+        if (intent != AuthIntent.ConnectGithub && !LoginProviders.SignIn.Contains(identity.Provider))
+            return new AuthOutcome(null, AuthErrors.SignInFailed);
         if (intent == AuthIntent.SignIn)
-            return new AuthOutcome((await SignInAsync(identity, github, ct)).Id);
+            return new AuthOutcome((await SignInAsync(identity, ct)).Id);
 
         if (currentUserId is not { } uid || !await db.Users.AnyAsync(u => u.Id == uid, ct))
             return new AuthOutcome(null, AuthErrors.SignedOut);
@@ -127,13 +132,17 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
         return null;
     }
 
-    /// <summary>Removes a sign-in method. The last one can never be removed, or the account could not be reached.</summary>
+    /// <summary>
+    /// Removes a sign-in method. The last one can never be removed, or the account could not be reached. A password
+    /// counts once its email is confirmed (an unconfirmed one cannot sign in yet).
+    /// </summary>
     public async Task<UnlinkResult> UnlinkAsync(Guid userId, string provider, CancellationToken ct = default)
     {
         var logins = await db.ExternalLogins.Where(l => l.UserId == userId).ToListAsync(ct);
         var login = logins.FirstOrDefault(l => l.Provider == provider);
         if (login is null) return UnlinkResult.NotLinked;
-        if (logins.Count == 1) return UnlinkResult.LastSignInMethod;
+        var hasPassword = await db.PasswordLogins.AnyAsync(p => p.UserId == userId && p.EmailConfirmedAt != null, ct);
+        if (logins.Count == 1 && !hasPassword) return UnlinkResult.LastSignInMethod;
 
         db.ExternalLogins.Remove(login);
         await db.SaveChangesAsync(ct);
@@ -176,27 +185,34 @@ public class AccountService(AppDbContext db, ITokenProtector tokens, TimeProvide
         return true;
     }
 
+    private Task<string> FreeSlugAsync(string name, CancellationToken ct) => FreeSlugAsync(db, name, ct);
+
     /// <summary>
-    /// Keeps the token of the user's GitHub connection fresh, or creates the connection when the user has none
-    /// and this GitHub account does not already feed another DevSheet account.
+    /// Saves a new account. Two people with the same name signing up at the same moment can both be offered the same
+    /// slug; the database's unique index refuses the second, which then takes the next free one instead of failing.
     /// </summary>
-    private async Task RefreshGithubAsync(User user, GithubGrant github, DateTime now, CancellationToken ct)
+    public static async Task SaveNewUserAsync(AppDbContext db, User user, CancellationToken ct)
     {
-        var connection = user.GithubConnection;
-        if (connection is null)
+        for (var attempt = 1; ; attempt++)
         {
-            if (await db.GithubConnections.AnyAsync(c => c.GithubId == github.GithubId, ct)) return;
-            user.GithubConnection = connection = new GithubConnection { UserId = user.Id, GithubId = github.GithubId, ConnectedAt = now };
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return;
+            }
+            catch (DbUpdateException) when (attempt < 5)
+            {
+                if (!await SlugTakenAsync(db, user, ct)) throw;
+                user.Slug = await FreeSlugAsync(db, user.DisplayName, ct);
+            }
         }
-        else if (connection.GithubId != github.GithubId)
-        {
-            return; // signed in with one GitHub account but syncing from another: leave the connection alone
-        }
-        connection.Login = github.Login;
-        connection.EncryptedToken = tokens.Protect(github.AccessToken);
     }
 
-    private async Task<string> FreeSlugAsync(string name, CancellationToken ct)
+    private static Task<bool> SlugTakenAsync(AppDbContext db, User user, CancellationToken ct) =>
+        db.Users.AsNoTracking().AnyAsync(u => u.Slug == user.Slug && u.Id != user.Id, ct);
+
+    /// <summary>The first free public slug made from a name (also counts users added but not saved yet).</summary>
+    public static async Task<string> FreeSlugAsync(AppDbContext db, string name, CancellationToken ct)
     {
         foreach (var slug in SlugRules.Candidates(name))
             if (!await db.Users.AnyAsync(u => u.Slug == slug, ct) && !db.Users.Local.Any(u => u.Slug == slug))

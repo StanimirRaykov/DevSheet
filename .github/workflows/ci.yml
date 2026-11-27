@@ -68,6 +68,10 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U devsheet -d devsheet_e2e"
           --health-interval 5s --health-timeout 3s --health-retries 10
+      # Receives the account emails (confirm, reset); the tests read the links from its API on 8025.
+      mailpit:
+        image: axllent/mailpit:v1.33.1
+        ports: ["1025:1025", "8025:8025"]
     defaults:
       run:
         working-directory: web
@@ -85,7 +89,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      # Starts the API (Testing environment, stubbed GitHub) and a production build of the web app, then runs the tests.
+      # Starts the API (Testing environment, stubbed GitHub, email to Mailpit) and a production build of the web app, then runs the tests.
       - run: npx playwright test
       - uses: actions/upload-artifact@v4
         if: failure()

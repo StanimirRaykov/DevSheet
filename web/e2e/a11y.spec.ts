@@ -5,8 +5,8 @@ import { API, expectAccessible, signIn } from "./support";
  * The checks every page gets, signed out and signed in, in both themes: axe, no horizontal scroll at phone, tablet and
  * desktop widths, headings in order, and a keyboard run (every Tab stop visible, with a focus ring, and no trap).
  */
-const PUBLIC = ["/", "/about", "/privacy", "/terms", "/login", "/demo"];
-const SIGNED_IN = ["/dashboard", "/dashboard/projects", "/dashboard/skills", "/dashboard/profile", "/dashboard/cv", "/settings"];
+const PUBLIC = ["/", "/about", "/privacy", "/terms", "/login", "/signup", "/forgot-password", "/demo"];
+const SIGNED_IN = ["/dashboard", "/dashboard/projects", "/dashboard/skills", "/dashboard/profile", "/dashboard/cv", "/settings", "/settings?tab=sign-in"];
 const WIDTHS = [360, 768, 1280];
 
 /** One fictional account per worker, synced once, so the lists have rows in them. */

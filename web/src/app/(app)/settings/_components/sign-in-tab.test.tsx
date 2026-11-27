@@ -20,16 +20,21 @@ vi.mock("@/lib/client", () => ({
   },
 }));
 
-const github: Login = { provider: "github", email: "ana@example.com", createdAt: "2026-01-01T00:00:00Z" };
 const google: Login = { provider: "google", email: "ana@gmail.example", createdAt: "2026-02-01T00:00:00Z" };
+// A provider the web app cannot show yet (still linked on the server): counts as a way in, has no row.
+const apple: Login = { provider: "apple", email: null, createdAt: "2026-03-01T00:00:00Z" };
 
 const me = (connected: boolean): Me => ({
   id: "u1", displayName: "Ana", avatarUrl: null, slug: "ana", isPublished: false,
   github: connected ? { login: "ana-dev", lastSyncedAt: null } : null,
 });
 
-function renderMethods(logins: Login[], enabled = ["github", "google"] as ("github" | "google")[], onChange = () => {}) {
-  return render(<ToastProvider><SignInMethods logins={logins} enabled={enabled} onChange={onChange} /></ToastProvider>);
+function renderMethods(logins: Login[], enabled: "google"[] = ["google"], onChange = () => {}, passwordSignsIn = false) {
+  return render(
+    <ToastProvider>
+      <SignInMethods logins={logins} enabled={enabled} passwordSignsIn={passwordSignsIn} onChange={onChange} />
+    </ToastProvider>,
+  );
 }
 
 function renderGithub(connected: boolean) {
@@ -44,23 +49,36 @@ beforeEach(() => {
 });
 
 describe("SignInMethods", () => {
-  it("lists added methods with Remove and set-up ones with Add, which links back to this tab", () => {
-    renderMethods([github]);
+  it("offers Add for a set-up provider, linking back to this tab, and never lists GitHub", () => {
+    renderMethods([]);
 
-    expect(within(row("GitHub")).getByText(/ana@example.com/)).toBeVisible();
     const add = within(row("Google")).getByRole("link", { name: "Add Google" });
     expect(add).toHaveAttribute("href", expect.stringContaining("/auth/link/google?next=%2Fsettings%3Ftab%3Dsign-in"));
+    expect(screen.queryByText("GitHub", { selector: "span.font-medium" })).toBeNull();
   });
 
   it("does not let the last sign-in method be removed", () => {
-    renderMethods([github]);
-    expect(within(row("GitHub")).getByRole("button", { name: "Remove" })).toBeDisabled();
-    expect(screen.getByText(/only sign-in method/)).toBeVisible();
+    renderMethods([google]);
+    expect(within(row("Google")).getByText(/ana@gmail.example/)).toBeVisible();
+    expect(within(row("Google")).getByRole("button", { name: "Remove" })).toBeDisabled();
+    expect(screen.getByText(/only way to sign in/)).toBeVisible();
+  });
+
+  it("lets the last provider go when a confirmed password also signs in", () => {
+    renderMethods([google], ["google"], () => {}, true);
+    expect(within(row("Google")).getByRole("button", { name: "Remove" })).toBeEnabled();
+    expect(screen.queryByText(/only way to sign in/)).toBeNull();
+  });
+
+  it("does not warn about the last method when only a password signs in", () => {
+    renderMethods([], ["google"], () => {}, true);
+    expect(within(row("Google")).getByRole("link", { name: "Add Google" })).toBeVisible();
+    expect(screen.queryByText(/only way to sign in/)).toBeNull();
   });
 
   it("removes a method when there is another one, then reloads", async () => {
     let changed = false;
-    renderMethods([github, google], ["github", "google"], () => (changed = true));
+    renderMethods([google, apple], ["google"], () => (changed = true));
 
     await userEvent.click(within(row("Google")).getByRole("button", { name: "Remove" }));
 
@@ -70,7 +88,7 @@ describe("SignInMethods", () => {
   });
 
   it("hides a provider that is neither added nor set up on the server", () => {
-    renderMethods([github], ["github"]);
+    renderMethods([], []);
     expect(screen.queryByText("Google")).toBeNull();
   });
 });

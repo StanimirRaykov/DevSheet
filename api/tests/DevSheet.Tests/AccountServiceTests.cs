@@ -19,44 +19,42 @@ public class AccountServiceTests : IDisposable
         new(LoginProviders.Google, key, name, email);
 
     [Fact]
-    public async Task First_github_sign_in_creates_the_account_its_login_and_the_connection()
+    public async Task First_google_sign_in_creates_the_account_and_its_login()
     {
-        var user = await Accounts.SignInAsync(GitHub(42), Grant(42));
+        var user = await Accounts.SignInAsync(Google("g-1"));
 
-        var saved = await _t.Db.Users.Include(u => u.Logins).Include(u => u.GithubConnection).SingleAsync();
+        var saved = await _t.Db.Users.Include(u => u.Logins).SingleAsync();
         Assert.Equal(user.Id, saved.Id);
-        Assert.Equal("Maria P", saved.DisplayName);
-        Assert.Equal("maria@example.com", saved.Email);
-        Assert.Equal("maria-p", saved.Slug);
+        Assert.Equal(("Maria P", "maria@example.com", "maria-p"), (saved.DisplayName, saved.Email, saved.Slug));
         Assert.Equal(_clock.GetUtcNow().UtcDateTime, saved.CreatedAt);
         var login = Assert.Single(saved.Logins);
-        Assert.Equal((LoginProviders.GitHub, "42"), (login.Provider, login.ProviderKey));
-        Assert.Equal((42L, "maria-p", "gho_1"), (saved.GithubConnection!.GithubId, saved.GithubConnection.Login, saved.GithubConnection.EncryptedToken));
+        Assert.Equal((LoginProviders.Google, "g-1"), (login.Provider, login.ProviderKey));
+        Assert.Null(await _t.Db.GithubConnections.FirstOrDefaultAsync());
     }
 
     [Fact]
-    public async Task Second_github_sign_in_finds_the_same_account_and_refreshes_the_token()
+    public async Task Second_sign_in_finds_the_same_account()
     {
-        var first = await Accounts.SignInAsync(GitHub(42), Grant(42));
-        var second = await Accounts.SignInAsync(GitHub(42, login: "maria-renamed"), Grant(42, "maria-renamed", "gho_2"));
+        var first = await Accounts.SignInAsync(Google("g-1"));
+        var second = await Accounts.SignInAsync(Google("g-1", "Maria Renamed"));
 
         Assert.Equal(first.Id, second.Id);
-        Assert.Equal(1, await _t.Db.Users.CountAsync());
-        Assert.Equal(1, await _t.Db.ExternalLogins.CountAsync());
-        var connection = await _t.Db.GithubConnections.SingleAsync();
-        Assert.Equal(("maria-renamed", "gho_2"), (connection.Login, connection.EncryptedToken));
-        Assert.Equal("maria-p", (await _t.Db.Users.SingleAsync()).Slug); // a GitHub rename never moves the public page
+        Assert.Equal((1, 1), (await _t.Db.Users.CountAsync(), await _t.Db.ExternalLogins.CountAsync()));
     }
 
     [Fact]
-    public async Task Google_sign_in_with_the_same_email_as_a_github_account_makes_a_separate_account()
+    public async Task Github_can_never_sign_in()
     {
-        var github = await Accounts.SignInAsync(GitHub(42), Grant(42));
-        var google = await Accounts.SignInAsync(Google("g-1"));
+        await Assert.ThrowsAsync<ArgumentException>(() => Accounts.SignInAsync(GitHub(42)));
 
-        Assert.NotEqual(github.Id, google.Id);
-        Assert.Equal(2, await _t.Db.Users.CountAsync());
-        Assert.Null((await _t.Db.Users.Include(u => u.GithubConnection).SingleAsync(u => u.Id == google.Id)).GithubConnection);
+        // Also not when a GitHub round trip comes back as a sign-in or a link (an old or tampered start).
+        Assert.Equal(new AuthOutcome(null, AuthErrors.SignInFailed), await Accounts.CompleteAsync(AuthIntent.SignIn, null, GitHub(42), Grant(42)));
+        var user = await Accounts.SignInAsync(Google("g-1"));
+        Assert.Equal(new AuthOutcome(null, AuthErrors.SignInFailed), await Accounts.CompleteAsync(AuthIntent.Link, user.Id, GitHub(42), Grant(42)));
+
+        Assert.Equal(1, await _t.Db.Users.CountAsync());
+        Assert.False(await _t.Db.ExternalLogins.AnyAsync(l => l.Provider == LoginProviders.GitHub));
+        Assert.False(await _t.Db.GithubConnections.AnyAsync());
     }
 
     [Fact]
@@ -70,42 +68,33 @@ public class AccountServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Github_sign_in_reconnects_github_when_the_connection_was_removed()
+    public async Task A_slug_taken_between_choosing_and_saving_moves_to_the_next_free_one()
     {
-        var user = await Accounts.SignInAsync(GitHub(42), Grant(42));
-        _t.Db.GithubConnections.Remove(await _t.Db.GithubConnections.SingleAsync());
-        await _t.Db.SaveChangesAsync();
+        // Another request saves "maria-p" after this one chose it but before it saved (two sign-ups at once).
+        var user = new User { DisplayName = "Maria P", Slug = await AccountService.FreeSlugAsync(_t.Db, "Maria P", default) };
+        await using (var other = new DevSheet.Infrastructure.Persistence.AppDbContext(
+            new DbContextOptionsBuilder<DevSheet.Infrastructure.Persistence.AppDbContext>().UseSqlite(_t.Db.Database.GetDbConnection()).Options))
+        {
+            other.Users.Add(new User { DisplayName = "Maria P", Slug = "maria-p" });
+            await other.SaveChangesAsync();
+        }
+        _t.Db.Users.Add(user);
 
-        await Accounts.SignInAsync(GitHub(42), Grant(42, token: "gho_new"));
+        await AccountService.SaveNewUserAsync(_t.Db, user, default);
 
-        var connection = await _t.Db.GithubConnections.SingleAsync();
-        Assert.Equal((user.Id, "gho_new"), (connection.UserId, connection.EncryptedToken));
-    }
-
-    [Fact]
-    public async Task A_github_account_feeds_at_most_one_devsheet_account()
-    {
-        // Account A syncs from GitHub 42. Account B signs in with a GitHub login whose id is also 42
-        // (possible once B has linked it some other way): B gets no second connection to the same GitHub account.
-        var a = _t.AddUser("ana");
-        var gh = await _t.Db.GithubConnections.SingleAsync(c => c.UserId == a.Id);
-
-        var b = await Accounts.SignInAsync(GitHub(gh.GithubId, "ana"), Grant(gh.GithubId, "ana", "gho_b"));
-
-        Assert.NotEqual(a.Id, b.Id);
-        Assert.Equal(1, await _t.Db.GithubConnections.CountAsync());
-        Assert.Equal("enc", (await _t.Db.GithubConnections.SingleAsync()).EncryptedToken);
+        Assert.Equal("maria-p-2", user.Slug);
+        Assert.Equal(2, await _t.Db.Users.CountAsync());
     }
 
     [Fact]
     public async Task Linking_adds_a_second_sign_in_method_to_the_same_account()
     {
-        var user = await Accounts.SignInAsync(GitHub(42), Grant(42));
+        var user = _t.AddUser("ana");
 
         Assert.Null(await Accounts.LinkAsync(user.Id, Google("g-1")));
         Assert.Null(await Accounts.LinkAsync(user.Id, Google("g-1"))); // again: nothing changes
 
-        Assert.Equal(2, await _t.Db.ExternalLogins.CountAsync(l => l.UserId == user.Id));
+        Assert.Equal(1, await _t.Db.ExternalLogins.CountAsync(l => l.UserId == user.Id));
         Assert.Equal(user.Id, (await Accounts.SignInAsync(Google("g-1"))).Id);
     }
 
@@ -113,7 +102,7 @@ public class AccountServiceTests : IDisposable
     public async Task Linking_a_provider_account_that_belongs_to_another_account_is_refused()
     {
         var other = await Accounts.SignInAsync(Google("g-1"));
-        var user = await Accounts.SignInAsync(GitHub(42), Grant(42));
+        var user = _t.AddUser("ana");
 
         Assert.Equal(AuthErrors.LoginInUse, await Accounts.LinkAsync(user.Id, Google("g-1")));
         Assert.Equal(other.Id, (await _t.Db.ExternalLogins.SingleAsync(l => l.Provider == LoginProviders.Google)).UserId);
@@ -130,14 +119,29 @@ public class AccountServiceTests : IDisposable
     [Fact]
     public async Task Unlinking_the_last_sign_in_method_is_refused()
     {
-        var user = await Accounts.SignInAsync(GitHub(42), Grant(42));
+        var user = _t.AddUser("ana"); // has a GitHub connection, which is not a sign-in method
         await Accounts.LinkAsync(user.Id, Google("g-1"));
 
         Assert.Equal(UnlinkResult.NotLinked, await Accounts.UnlinkAsync(user.Id, LoginProviders.Apple));
-        Assert.Equal(UnlinkResult.Unlinked, await Accounts.UnlinkAsync(user.Id, LoginProviders.GitHub));
         Assert.Equal(UnlinkResult.LastSignInMethod, await Accounts.UnlinkAsync(user.Id, LoginProviders.Google));
-        // Unlinking GitHub as a sign-in method keeps GitHub connected for sync.
         Assert.True(await _t.Db.GithubConnections.AnyAsync(c => c.UserId == user.Id));
+    }
+
+    [Theory]
+    [InlineData(true, UnlinkResult.Unlinked)]
+    [InlineData(false, UnlinkResult.LastSignInMethod)] // an unconfirmed password cannot sign in yet
+    public async Task A_password_counts_as_a_sign_in_method_once_confirmed(bool confirmed, UnlinkResult expected)
+    {
+        var user = _t.AddUser("ana");
+        await Accounts.LinkAsync(user.Id, Google("g-1"));
+        _t.Db.PasswordLogins.Add(new PasswordLogin
+        {
+            UserId = user.Id, Email = "ana@example.test", NormalizedEmail = PasswordLogin.Normalize("ana@example.test"),
+            PasswordHash = "x", EmailConfirmedAt = confirmed ? _clock.GetUtcNow().UtcDateTime : null,
+        });
+        await _t.Db.SaveChangesAsync();
+
+        Assert.Equal(expected, await Accounts.UnlinkAsync(user.Id, LoginProviders.Google));
     }
 
     [Fact]
@@ -156,7 +160,8 @@ public class AccountServiceTests : IDisposable
     [Fact]
     public async Task Connecting_a_github_account_used_elsewhere_or_a_second_one_is_refused()
     {
-        await Accounts.SignInAsync(GitHub(42), Grant(42));
+        var other = await Accounts.SignInAsync(Google("g-0", "Other"));
+        Assert.Null(await Accounts.ConnectGithubAsync(other.Id, Grant(42)));
         var user = await Accounts.SignInAsync(Google("g-1"));
 
         Assert.Equal(AuthErrors.GithubInUse, await Accounts.ConnectGithubAsync(user.Id, Grant(42)));
@@ -177,7 +182,7 @@ public class AccountServiceTests : IDisposable
     public async Task A_refused_link_keeps_the_current_user_signed_in_and_reports_why()
     {
         await Accounts.SignInAsync(Google("g-1"));
-        var user = await Accounts.SignInAsync(GitHub(42), Grant(42));
+        var user = _t.AddUser("ana");
 
         var outcome = await Accounts.CompleteAsync(AuthIntent.Link, user.Id, Google("g-1"));
 

@@ -20,6 +20,7 @@ CREATE TABLE "Users" (
     "CreatedAt" timestamp with time zone NOT NULL,
     "OnboardingCompletedAt" timestamp with time zone,
     "OnboardingStep" integer NOT NULL,
+    "SecurityStamp" character varying(64) NOT NULL,
     CONSTRAINT "PK_Users" PRIMARY KEY ("Id")
 );
 
@@ -30,6 +31,19 @@ CREATE TABLE "SkillAliases" (
     "Alias" text NOT NULL,
     CONSTRAINT "PK_SkillAliases" PRIMARY KEY ("Id"),
     CONSTRAINT "FK_SkillAliases_Skills_SkillId" FOREIGN KEY ("SkillId") REFERENCES "Skills" ("Id") ON DELETE CASCADE
+);
+
+
+CREATE TABLE "AccountTokens" (
+    "Id" uuid NOT NULL,
+    "UserId" uuid NOT NULL,
+    "Purpose" character varying(20) NOT NULL,
+    "TokenHash" character varying(64) NOT NULL,
+    "CreatedAt" timestamp with time zone NOT NULL,
+    "ExpiresAt" timestamp with time zone NOT NULL,
+    "UsedAt" timestamp with time zone,
+    CONSTRAINT "PK_AccountTokens" PRIMARY KEY ("Id"),
+    CONSTRAINT "FK_AccountTokens_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
 );
 
 
@@ -115,6 +129,19 @@ CREATE TABLE "Languages" (
 );
 
 
+CREATE TABLE "PasswordLogins" (
+    "UserId" uuid NOT NULL,
+    "Email" character varying(254) NOT NULL,
+    "NormalizedEmail" character varying(254) NOT NULL,
+    "PasswordHash" text NOT NULL,
+    "EmailConfirmedAt" timestamp with time zone,
+    "CreatedAt" timestamp with time zone NOT NULL,
+    "PasswordChangedAt" timestamp with time zone NOT NULL,
+    CONSTRAINT "PK_PasswordLogins" PRIMARY KEY ("UserId"),
+    CONSTRAINT "FK_PasswordLogins_Users_UserId" FOREIGN KEY ("UserId") REFERENCES "Users" ("Id") ON DELETE CASCADE
+);
+
+
 CREATE TABLE "Profiles" (
     "Id" uuid NOT NULL,
     "UserId" uuid NOT NULL,
@@ -172,6 +199,12 @@ CREATE TABLE "ProjectSkills" (
 );
 
 
+CREATE UNIQUE INDEX "IX_AccountTokens_TokenHash" ON "AccountTokens" ("TokenHash");
+
+
+CREATE INDEX "IX_AccountTokens_UserId_Purpose" ON "AccountTokens" ("UserId", "Purpose");
+
+
 CREATE INDEX "IX_Certifications_UserId" ON "Certifications" ("UserId");
 
 
@@ -191,6 +224,9 @@ CREATE UNIQUE INDEX "IX_GithubRepos_UserId_GithubRepoId" ON "GithubRepos" ("User
 
 
 CREATE INDEX "IX_Languages_UserId" ON "Languages" ("UserId");
+
+
+CREATE UNIQUE INDEX "IX_PasswordLogins_NormalizedEmail" ON "PasswordLogins" ("NormalizedEmail");
 
 
 CREATE UNIQUE INDEX "IX_Profiles_UserId" ON "Profiles" ("UserId");

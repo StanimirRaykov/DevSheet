@@ -15,7 +15,7 @@ public class AccountSettingsApiTests(WebApplicationFactory<Program> factory) : I
     {
         using var db = _api.Db();
         var user = new User { DisplayName = "Ana", Slug = slug, Email = "ana@example.com" };
-        user.Logins.Add(new ExternalLogin { UserId = user.Id, Provider = LoginProviders.GitHub, ProviderKey = "gh-" + slug });
+        user.Logins.Add(new ExternalLogin { UserId = user.Id, Provider = LoginProviders.Google, ProviderKey = "g-" + slug });
         db.Users.Add(user);
         await db.SaveChangesAsync();
         return user;

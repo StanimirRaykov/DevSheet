@@ -101,8 +101,8 @@ public class GoogleSignInTests(WebApplicationFactory<Program> factory) : IClassF
     }
 
     [Fact]
-    public async Task Providers_lists_the_set_up_providers_in_display_order() =>
-        Assert.Equal("{\"providers\":[\"github\",\"google\"]}", await _api.Client().GetStringAsync("/auth/providers"));
+    public async Task Providers_lists_the_set_up_sign_in_providers_and_never_github() =>
+        Assert.Equal("{\"providers\":[\"google\"]}", await _api.Client().GetStringAsync("/auth/providers"));
 
     public void Dispose() => _api.Dispose();
 
@@ -135,7 +135,7 @@ public class ProvidersWithoutGoogleTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task A_provider_without_credentials_is_not_listed_and_cannot_be_started()
     {
-        Assert.Equal("{\"providers\":[\"github\"]}", await _api.Client().GetStringAsync("/auth/providers"));
+        Assert.Equal("{\"providers\":[]}", await _api.Client().GetStringAsync("/auth/providers"));
         Assert.Equal(HttpStatusCode.NotFound, (await _api.Client().GetAsync("/auth/google")).StatusCode);
     }
 

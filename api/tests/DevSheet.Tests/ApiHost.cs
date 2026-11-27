@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using DevSheet.Api;
 using DevSheet.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -19,16 +20,32 @@ namespace DevSheet.Tests;
 /// The real API on an in-memory SQLite database. Requests are signed in as the user id in the
 /// <see cref="TestAuthHandler.Header"/> header (no header: anonymous); OAuth schemes stay registered, with
 /// made-up credentials so they count as set up (pass <c>withGoogle: false</c> for a server without Google).
+/// Without the header the real sign-in cookie is used, so password sign-in tests run end to end. Rate limits are
+/// high unless a test passes its own <c>settings</c>.
 /// </summary>
 public sealed class ApiHost : IDisposable
 {
     private readonly SqliteConnection _conn = new("DataSource=:memory:");
     public WebApplicationFactory<Program> Factory { get; }
+    /// <summary>Every email the API sent during the test.</summary>
+    public RecordingEmailSender Emails { get; } = new();
 
-    public ApiHost(WebApplicationFactory<Program> factory, bool withGoogle = true)
+    public ApiHost(WebApplicationFactory<Program> factory, bool withGoogle = true, IDictionary<string, string>? settings = null)
     {
         _conn.Open();
-        Factory = factory.WithWebHostBuilder(b => b
+        var all = new Dictionary<string, string>
+        {
+            ["Auth:RateLimits:SignInsPerIpPerMinute"] = "10000",
+            ["Auth:RateLimits:EmailsPerIpPerHour"] = "10000",
+            ["Auth:RateLimits:SignInsPerEmailPer15Minutes"] = "10000",
+            ["Auth:RateLimits:EmailsPerAddressPerHour"] = "10000",
+        };
+        foreach (var (key, value) in settings ?? new Dictionary<string, string>()) all[key] = value;
+        Factory = factory.WithWebHostBuilder(b =>
+        {
+            // UseSetting, not ConfigureAppConfiguration: Program reads these before the app is built.
+            foreach (var (key, value) in all) b.UseSetting(key, value);
+            b
             .UseEnvironment("Testing")
             .UseSetting("Authentication:GitHub:ClientId", "test-github-id")
             .UseSetting("Authentication:GitHub:ClientSecret", "test-github-secret")
@@ -38,14 +55,19 @@ public sealed class ApiHost : IDisposable
             {
                 s.RemoveAll<DbContextOptions<AppDbContext>>();
                 s.AddDbContext<AppDbContext>(o => o.UseSqlite(_conn));
-                s.AddAuthentication().AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, null);
+                s.RemoveAll<DevSheet.Application.Abstractions.IEmailSender>();
+                s.AddSingleton<DevSheet.Application.Abstractions.IEmailSender>(Emails);
+                s.AddAuthentication().AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, o =>
+                    o.ForwardDefaultSelector = http => http.Request.Headers.ContainsKey(TestAuthHandler.Header)
+                        ? null : CookieAuthenticationDefaults.AuthenticationScheme);
                 s.PostConfigure<AuthenticationOptions>(o =>
                 {
                     o.DefaultScheme = TestAuthHandler.Scheme;
                     o.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
                     o.DefaultChallengeScheme = TestAuthHandler.Scheme;
                 });
-            }));
+            });
+        });
         using var scope = Factory.Services.CreateScope();
         scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreated();
     }

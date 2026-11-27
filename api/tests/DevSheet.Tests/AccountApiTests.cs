@@ -2,6 +2,7 @@ using System.Net;
 using System.Web;
 using AspNet.Security.OAuth.GitHub;
 using DevSheet.Domain.Entities;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,13 +25,16 @@ public class AccountApiTests(WebApplicationFactory<Program> factory) : IClassFix
         return user;
     }
 
-    /// <summary>Where the API will send the browser after GitHub, read back from the (encrypted) OAuth state.</summary>
+    /// <summary>Where the API will send the browser after the provider, read back from the (encrypted) OAuth state.</summary>
     private string ReturnUrlOf(HttpResponseMessage challenge)
     {
         var state = HttpUtility.ParseQueryString(challenge.Headers.Location!.Query)["state"]!;
-        var options = _api.Factory.Services.GetRequiredService<IOptionsMonitor<GitHubAuthenticationOptions>>()
-            .Get(GitHubAuthenticationDefaults.AuthenticationScheme);
-        return options.StateDataFormat.Unprotect(state)!.RedirectUri!;
+        var format = challenge.Headers.Location!.Host == "github.com"
+            ? _api.Factory.Services.GetRequiredService<IOptionsMonitor<GitHubAuthenticationOptions>>()
+                .Get(GitHubAuthenticationDefaults.AuthenticationScheme).StateDataFormat
+            : _api.Factory.Services.GetRequiredService<IOptionsMonitor<GoogleOptions>>()
+                .Get(GoogleDefaults.AuthenticationScheme).StateDataFormat;
+        return format.Unprotect(state)!.RedirectUri!;
     }
 
     [Fact]
@@ -47,7 +51,7 @@ public class AccountApiTests(WebApplicationFactory<Program> factory) : IClassFix
     [Fact]
     public async Task Disconnecting_github_deletes_the_token_keeps_projects_and_then_sync_is_409()
     {
-        var user = await UserWith(github: true, LoginProviders.GitHub);
+        var user = await UserWith(github: true, LoginProviders.Google);
         using (var db = _api.Db())
         {
             var repo = new GithubRepo { UserId = user.Id, GithubRepoId = 7, Name = "kept", HtmlUrl = "https://github.com/ana/kept" };
@@ -72,9 +76,9 @@ public class AccountApiTests(WebApplicationFactory<Program> factory) : IClassFix
     [Fact]
     public async Task Unlinking_the_last_sign_in_method_is_409()
     {
-        var user = await UserWith(github: true, LoginProviders.GitHub);
+        var user = await UserWith(github: true, LoginProviders.Google);
 
-        var response = await _api.Client(user.Id).DeleteAsync("/api/me/logins/github");
+        var response = await _api.Client(user.Id).DeleteAsync("/api/me/logins/google");
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         using var db = _api.Db();
@@ -84,21 +88,22 @@ public class AccountApiTests(WebApplicationFactory<Program> factory) : IClassFix
     [Fact]
     public async Task Unlinking_one_of_two_sign_in_methods_works_and_the_list_shows_the_rest()
     {
-        var user = await UserWith(github: true, LoginProviders.GitHub, LoginProviders.Google);
+        var user = await UserWith(github: true, LoginProviders.Apple, LoginProviders.Google);
         var client = _api.Client(user.Id);
 
-        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync("/api/me/logins/GitHub")).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync("/api/me/logins/Apple")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync("/api/me/logins/apple")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync("/api/me/logins/github")).StatusCode);
 
         var logins = await client.GetStringAsync("/api/me/logins");
         Assert.Contains("\"provider\":\"google\"", logins);
-        Assert.DoesNotContain("github", logins);
+        Assert.DoesNotContain("apple", logins);
     }
 
     [Fact]
     public async Task Me_reports_the_github_connection_or_null()
     {
-        var connected = await UserWith(github: true, LoginProviders.GitHub);
+        var connected = await UserWith(github: true, LoginProviders.Google);
         var googleOnly = await UserWith(github: false, LoginProviders.Google);
 
         Assert.Contains("\"github\":{\"login\":\"ana\"", await _api.Client(connected.Id).GetStringAsync("/api/me"));
@@ -106,34 +111,34 @@ public class AccountApiTests(WebApplicationFactory<Program> factory) : IClassFix
     }
 
     [Theory]
-    [InlineData("/auth/github?next=https://evil.com", "http://localhost:3000/dashboard")]
-    [InlineData("/auth/github?next=//evil.com", "http://localhost:3000/dashboard")]
-    [InlineData("/auth/github?next=/dashboard/projects", "http://localhost:3000/dashboard/projects")]
+    [InlineData("/auth/google?next=https://evil.com", "http://localhost:3000/dashboard")]
+    [InlineData("/auth/google?next=//evil.com", "http://localhost:3000/dashboard")]
+    [InlineData("/auth/google?next=/dashboard/projects", "http://localhost:3000/dashboard/projects")]
     public async Task Sign_in_only_returns_to_local_paths(string url, string expected)
     {
         var response = await _api.Client().GetAsync(url);
 
         Assert.Equal(HttpStatusCode.Found, response.StatusCode);
-        Assert.Equal("github.com", response.Headers.Location!.Host);
+        Assert.Equal("accounts.google.com", response.Headers.Location!.Host);
         Assert.Equal(expected, ReturnUrlOf(response));
     }
 
     [Theory]
-    [InlineData("/auth/link/github?next=https://evil.com", "http://localhost:3000/settings")]
-    [InlineData("/auth/github/connect?next=https://evil.com", "http://localhost:3000/settings")]
-    [InlineData("/auth/github/connect?next=/dashboard", "http://localhost:3000/dashboard")]
-    public async Task Link_and_connect_go_to_github_and_only_return_to_local_paths(string url, string expected)
+    [InlineData("/auth/link/google?next=https://evil.com", "http://localhost:3000/settings", "accounts.google.com")]
+    [InlineData("/auth/github/connect?next=https://evil.com", "http://localhost:3000/settings", "github.com")]
+    [InlineData("/auth/github/connect?next=/dashboard", "http://localhost:3000/dashboard", "github.com")]
+    public async Task Link_and_connect_go_to_the_provider_and_only_return_to_local_paths(string url, string expected, string host)
     {
-        var user = await UserWith(github: false, LoginProviders.Google);
+        var user = await UserWith(github: false);
 
         var response = await _api.Client(user.Id).GetAsync(url);
 
-        Assert.Equal("github.com", response.Headers.Location!.Host);
+        Assert.Equal(host, response.Headers.Location!.Host);
         Assert.Equal(expected, ReturnUrlOf(response));
     }
 
     [Theory]
-    [InlineData("/auth/link/github")]
+    [InlineData("/auth/link/google")]
     [InlineData("/auth/github/connect")]
     public async Task Link_and_connect_without_a_session_go_to_the_login_page(string url)
     {
@@ -145,8 +150,18 @@ public class AccountApiTests(WebApplicationFactory<Program> factory) : IClassFix
 
     [Theory]
     [InlineData("/auth/myspace")]
-    public async Task Unknown_provider_is_404(string url) =>
+    [InlineData("/auth/github")]
+    [InlineData("/auth/GitHub?next=/dashboard")]
+    public async Task Unknown_provider_and_github_sign_in_are_404(string url) =>
         Assert.Equal(HttpStatusCode.NotFound, (await _api.Client().GetAsync(url)).StatusCode);
+
+    [Fact]
+    public async Task GitHub_cannot_be_linked_as_a_sign_in_method()
+    {
+        var user = await UserWith(github: false, LoginProviders.Google);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await _api.Client(user.Id).GetAsync("/auth/link/github")).StatusCode);
+    }
 
     public void Dispose() => _api.Dispose();
 }

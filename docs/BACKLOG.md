@@ -31,7 +31,8 @@ Workflow: see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 Turns DevSheet from a CV tool into a full platform: landing page, own login (GitHub, Google, Apple), settings,
 onboarding, one page per area, and a minimal design with motion. Agreed order: 26, 27, 13 (migrations), 42 (Docker), 29, 28, 30, 32, 33, then the pages 39, 35, 36, 37, 34, 38;
-25 (Europass XML) whenever the editor test is done; 40 last; 31 (Apple) only when a domain exists.
+25 (Europass XML) whenever the editor test is done; 40 last; then 60 (email and password accounts), then 07 (LinkedIn import);
+31 (Apple) only when a domain exists.
 
 | # | Issue | Depends on |
 |---|-------|-----------|
@@ -51,3 +52,4 @@ onboarding, one page per area, and a minimal design with motion. Agreed order: 2
 | 39 | Public profile redesign | 26 |
 | 40 | Polish, accessibility, end-to-end tests | all M3 |
 | 42 | Docker: API and web containers, full stack | 13 |
+| 60 | Email and password accounts; GitHub connect-only ([`60-auth-email-password.md`](issues/60-auth-email-password.md)) | 29, 30, 32, 42 |

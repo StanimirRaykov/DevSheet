@@ -1,10 +1,10 @@
-using System.Security.Claims;
 using DevSheet.Application.Abstractions;
 using DevSheet.Domain.Entities;
 using DevSheet.Infrastructure.Accounts;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using DevSheet.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DevSheet.Api;
@@ -32,26 +32,55 @@ public static class TestingSupport
 
     public record SignInRequest(string? Login, bool CompleteOnboarding = true);
 
+    /// <summary>The password of every account the test sign-in creates (fictional; Testing only).</summary>
+    public const string Password = "e2e-password-1234";
+
     /// <summary>
-    /// POST /api/testing/sign-in {login}: signs this browser in as a fictional GitHub user, created on first use with a
-    /// GitHub connection (a fake token, used only by the stub). Replaces the OAuth round trip, which a test cannot do.
+    /// POST /api/testing/sign-in {login}: signs this browser in as a fictional user, created on first use with a
+    /// confirmed password login ({login}@e2e.example.test, <see cref="Password"/>) and a GitHub connection (a fake
+    /// token, used only by the stub). Replaces signing up through the inbox, which most tests do not need.
     /// </summary>
     public static void MapTestingEndpoints(this WebApplication app)
     {
         if (!app.Environment.IsTesting()) return;
 
-        app.MapPost("/api/testing/sign-in", async ([FromBody] SignInRequest body, HttpContext http, [FromServices] AccountService accounts, [FromServices] OnboardingService onboarding) =>
+        app.MapPost("/api/testing/sign-in", async ([FromBody] SignInRequest body, HttpContext http, [FromServices] AppDbContext db,
+            [FromServices] ITokenProtector tokens, [FromServices] OnboardingService onboarding) =>
         {
             var login = string.IsNullOrWhiteSpace(body.Login) ? "e2e-user" : body.Login.Trim().ToLowerInvariant();
             // A stable id per login, so signing in again finds the same account.
             var githubId = 900_000_000L + StableHash(login) % 1_000_000;
-            var user = await accounts.SignInAsync(
-                new ExternalIdentity(LoginProviders.GitHub, githubId.ToString(), DisplayName: "Test " + login),
-                new GithubGrant(githubId, login, "e2e-fake-token"));
+            var email = $"{login}@e2e.example.test";
+            var normalized = PasswordLogin.Normalize(email);
+            // Also finds accounts made before sign-in by GitHub was removed: they kept their GitHub connection.
+            var user = await db.Users.Include(u => u.PasswordLogin).FirstOrDefaultAsync(u =>
+                u.PasswordLogin!.NormalizedEmail == normalized || u.GithubConnection!.GithubId == githubId);
+            if (user is null)
+            {
+                user = new User
+                {
+                    DisplayName = "Test " + login, Email = email,
+                    Slug = await AccountService.FreeSlugAsync(db, login, http.RequestAborted),
+                };
+                user.GithubConnection = new GithubConnection
+                {
+                    UserId = user.Id, GithubId = githubId, Login = login, EncryptedToken = tokens.Protect("e2e-fake-token"),
+                };
+                db.Users.Add(user);
+            }
+            if (user.PasswordLogin is null)
+            {
+                var now = DateTime.UtcNow;
+                user.PasswordLogin = new PasswordLogin
+                {
+                    UserId = user.Id, Email = email, NormalizedEmail = normalized, CreatedAt = now, PasswordChangedAt = now,
+                    EmailConfirmedAt = now, PasswordHash = new PasswordHasher<PasswordLogin>().HashPassword(new PasswordLogin(), Password),
+                };
+            }
+            await db.SaveChangesAsync(http.RequestAborted);
             if (body.CompleteOnboarding) await onboarding.CompleteAsync(user.Id);
 
-            var identity = new ClaimsIdentity([new Claim(ExternalAuth.UserIdClaim, user.Id.ToString())], CookieAuthenticationDefaults.AuthenticationScheme);
-            await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+            await Sessions.SignInAsync(http, user.Id);
             return Results.Ok(new { user.Id, user.Slug });
         });
     }

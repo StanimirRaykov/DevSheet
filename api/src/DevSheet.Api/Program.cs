@@ -32,17 +32,20 @@ builder.Services
     .AddAuthentication(o =>
     {
         o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        // API calls without a valid cookie must get 401 (see the cookie's OnRedirectToLogin below), not a redirect to GitHub.
-        // The login endpoint challenges GitHub explicitly (AuthController.Login).
+        // API calls without a valid cookie must get 401 (see the cookie's OnRedirectToLogin below), not a redirect to a
+        // provider. AuthController challenges a provider explicitly.
         o.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddCookie(o =>
     {
         o.Cookie.Name = "devsheet.auth";
         o.Cookie.SameSite = SameSiteMode.Lax;
-        // API endpoints should answer 401, not redirect to GitHub.
+        // API endpoints should answer 401, not redirect to a login page.
         o.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };
+        // Every request: the account still exists and its security stamp is unchanged (no reset since sign-in).
+        o.Events.OnValidatePrincipal = Sessions.ValidateAsync;
     })
+    // GitHub is only connected (to sync repositories), never used to sign in: see AccountService.CompleteAsync.
     .AddGitHub(o =>
     {
         o.ClientId = Credential("GitHub", "ClientId");
@@ -89,6 +92,7 @@ builder.Services
         o.Events.OnRemoteFailure = ctx => ExternalAuth.OnRemoteFailure(ctx, webOrigin);
     });
 builder.Services.AddAuthorization();
+AuthRateLimits.Add(builder.Services, builder.Configuration);
 
 // OAuth credentials fall back to a placeholder so the API boots before a provider is registered.
 // GET /auth/providers leaves such a provider out, so the login page never shows a button that cannot work.
@@ -116,6 +120,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

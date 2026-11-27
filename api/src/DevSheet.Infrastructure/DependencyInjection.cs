@@ -15,12 +15,16 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(o => o.UseNpgsql(config.GetConnectionString("Default")));
         services.AddScoped<ITokenProtector, TokenProtector>();
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(Email.SmtpOptions.From(config));
+        services.AddSingleton<IEmailSender, Email.SmtpEmailSender>();
         services.AddScoped<IGitHubRepoSource, OctokitRepoSource>();
         services.AddScoped<IGitHubSyncService, GitHubSyncService>();
         services.AddScoped<DevSheet.Infrastructure.Skills.ProjectSkillService>();
         services.AddScoped<DevSheet.Infrastructure.Career.CareerService>();
         services.AddScoped<DevSheet.Infrastructure.Cv.CvDataService>();
         services.AddScoped<DevSheet.Infrastructure.Accounts.AccountService>();
+        services.AddScoped<DevSheet.Infrastructure.Accounts.PasswordAccountService>();
+        services.AddSingleton(new DevSheet.Infrastructure.Accounts.AccountEmails(config["WebOrigin"] ?? "http://localhost:3000"));
         services.AddScoped<DevSheet.Infrastructure.Accounts.AccountSettingsService>();
         services.AddScoped<DevSheet.Infrastructure.Accounts.OnboardingService>();
         return services;
